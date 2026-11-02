@@ -1,0 +1,18 @@
+<Window x:Class="Brennwerk.MediaWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Brennwerk · Discs lesen und sichern" Width="900" Height="770" MinWidth="780" MinHeight="700" Background="#10151F" Foreground="#EDF2FA" FontFamily="Segoe UI" WindowStartupLocation="CenterOwner" Closing="OnClosing">
+ <Grid Margin="28"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel><TextBlock Text="DISCS LESEN &amp; SICHERN" Foreground="#6EE7C2" FontSize="13" FontWeight="Bold"/><TextBlock Text="Vom Medium auf deinen PC." FontSize="27" FontWeight="SemiBold" Margin="0,7,0,20"/></StackPanel>
+  <StackPanel Grid.Row="1" x:Name="Options">
+   <TextBlock Text="MEDIENART" Foreground="#6EE7C2" FontWeight="Bold" Margin="0,0,0,8"/>
+   <ComboBox x:Name="Kind" SelectedIndex="0" SelectionChanged="KindChanged"><ComboBoxItem Content="Film-DVD"/><ComboBoxItem Content="Film-Blu-ray"/><ComboBoxItem Content="Software- / Spiele-Disc"/></ComboBox>
+   <TextBlock Text="QUELLE" Foreground="#6EE7C2" FontWeight="Bold" Margin="0,18,0,8"/>
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><ComboBox x:Name="Source" IsEditable="True"/><Button Grid.Column="1" Content="Ordner …" Click="BrowseSource" Margin="10,0,0,0"/><Button Grid.Column="2" Content="Prüfen" Click="Analyze" Margin="10,0,0,0"/></Grid>
+   <StackPanel x:Name="TitleOptions" Orientation="Horizontal" Margin="0,14,0,0"><TextBlock Text="Filmtitel:" VerticalAlignment="Center" Margin="0,0,12,0"/><TextBox x:Name="TitleNumber" Text="1" Width="65"/><TextBlock x:Name="TitleHint" Text="DVD: ab 1" Foreground="#9DAEC5" VerticalAlignment="Center" Margin="12,0,0,0"/></StackPanel>
+  </StackPanel>
+  <Border Grid.Row="2" Background="#202D3E" Padding="14" CornerRadius="8" Margin="0,18,0,16"><TextBlock x:Name="Notice" Text="DVD-Export liest einen Filmtitel über die lokale VLC-Installation und speichert ihn als MKV. CSS kann gelesen werden, soweit VLC und das Laufwerk dies unterstützen. Kein vollständiges Disc-Abbild und keine Menükopie." Foreground="#C8D5E6" TextWrapping="Wrap"/></Border>
+  <WrapPanel Grid.Row="3"><Button x:Name="ExportButton" Content="Filmtitel als MKV exportieren …" Background="#147A64" Click="Export"/><Button x:Name="FabButton" Content="In DVDFab weiterarbeiten" Click="OpenFab"/><Button x:Name="CancelButton" Content="Abbrechen" Click="Cancel" IsEnabled="False"/></WrapPanel>
+  <TextBlock Grid.Row="4" x:Name="Engine" Foreground="#9DAEC5" Margin="0,12,0,0" TextWrapping="Wrap"/>
+  <ProgressBar x:Name="Progress" Grid.Row="5" Height="5" BorderThickness="0" Background="#243247" Foreground="#6EE7C2" Margin="0,14,0,12"/>
+  <TextBox Grid.Row="6" x:Name="Log" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" Background="#0C1119"/>
+  <TextBlock Grid.Row="7" x:Name="Status" Foreground="#9DAEC5" Text="Quelle wählen und zuerst prüfen. Die Quell-Disc wird nur gelesen." Margin="0,12,0,0"/>
+ </Grid>
+</Window>

@@ -1,0 +1,50 @@
+name: Build and publish Brennwerk
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Validate update protocol
+        shell: pwsh
+        run: dotnet run --project tools/UpdaterTests/UpdaterTests.csproj -c Release
+      - name: Build single-file EXE
+        shell: pwsh
+        run: dotnet publish Brennwerk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o package
+      - name: Sign release description
+        shell: pwsh
+        env:
+          BRENNWERK_UPDATE_KEY: ${{ secrets.BRENNWERK_UPDATE_KEY }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:BRENNWERK_UPDATE_KEY)) { throw 'Repository secret BRENNWERK_UPDATE_KEY is missing.' }
+          $version = ([xml](Get-Content Brennwerk.csproj)).Project.PropertyGroup.Version
+          $version = [string]$version
+          $expectedTag = 'v' + $version
+          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne $expectedTag) { throw "Publish from matching version tag $expectedTag." }
+          $keyPath = Join-Path $env:RUNNER_TEMP 'brennwerk-release-key.pem'
+          try {
+            [IO.File]::WriteAllText($keyPath, $env:BRENNWERK_UPDATE_KEY)
+            dotnet run --project tools/ReleaseSigner/ReleaseSigner.csproj -c Release -- sign package/Brennwerk.exe $env:GITHUB_REPOSITORY $version $keyPath RELEASE-NOTES.md package/update.json
+            if ($LASTEXITCODE -ne 0) { throw 'Release signing failed.' }
+            dotnet run --project tools/ReleaseSigner/ReleaseSigner.csproj -c Release -- verify package/update.json update-public.pem
+            if ($LASTEXITCODE -ne 0) { throw 'Signing key does not match the app public key.' }
+          } finally {
+            if (Test-Path -LiteralPath $keyPath) { Remove-Item -LiteralPath $keyPath -Force }
+          }
+      - name: Publish public release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:GITHUB_REF_NAME package/Brennwerk.exe package/update.json --repo $env:GITHUB_REPOSITORY --verify-tag --title "Brennwerk $env:GITHUB_REF_NAME" --notes-file RELEASE-NOTES.md
