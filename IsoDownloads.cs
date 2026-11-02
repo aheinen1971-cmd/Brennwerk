@@ -20,7 +20,7 @@ public static class IsoDownloads
         {
             "Windows"=>host is "software.download.prss.microsoft.com" or "software-download.microsoft.com" or "download.microsoft.com"||host.EndsWith(".download.prss.microsoft.com",StringComparison.OrdinalIgnoreCase),
             "Ubuntu"=>host=="releases.ubuntu.com",
-            "Debian"=>host=="cdimage.debian.org",
+            "Debian"=>host=="cdimage.debian.org"||host=="ftp.acc.umu.se"||host.EndsWith(".ftp.acc.umu.se",StringComparison.OrdinalIgnoreCase),
             "Fedora"=>host=="fedoraproject.org"||host.EndsWith(".fedoraproject.org",StringComparison.OrdinalIgnoreCase),
             _=>false
         };

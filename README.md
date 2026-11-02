@@ -1,4 +1,4 @@
-# Brennwerk 0.4.1 – Original-ISOs und signierter Updatekanal
+# Brennwerk 0.4.2 – Original-ISOs und signierter Updatekanal
 
 Eine eigenständige Windows-App für Daten-Discs, ISO-Abbilder und bootfähige USB-Sticks.
 
@@ -32,6 +32,9 @@ Im Modus **Linux / IMG → USB** auf **Aktuelle Linux-ISO holen** klicken. Zur W
 **Aktuelle Version suchen** lädt die offiziellen Releaseinformationen und die
 passende SHA-256-Prüfsumme. Der ISO-Download bleibt auf den offiziellen Servern
 der gewählten Anbieter; für Fedora wird der kanonische Fedora-Server verwendet.
+Debians offizielle Weiterleitung zum schwedischen Speicherverbund
+`ftp.acc.umu.se` und dessen Servern wird ebenfalls unterstützt; die Vergleichs-
+prüfsumme stammt weiterhin aus dem offiziellen Debian-Releaseverzeichnis.
 Nach erfolgreicher Hash- und ISO-Strukturprüfung wird die Datei automatisch in
 den richtigen USB-Modus übernommen. Neue Versionen werden beim erneuten Suchen
 ermittelt; es gibt keinen unbeaufsichtigten, wiederkehrenden Gigabyte-Download.

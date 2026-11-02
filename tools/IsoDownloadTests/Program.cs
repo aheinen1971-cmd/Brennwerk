@@ -12,6 +12,8 @@ Check(!IsoDownloads.TrustedUri("Windows",new Uri("https://software.download.prss
 Check(!IsoDownloads.TrustedUri("Ubuntu",new Uri("http://releases.ubuntu.com/test.iso")),"unencrypted download rejected");
 Check(!IsoDownloads.TrustedUri("Debian",new Uri("https://user:password@cdimage.debian.org/test.iso")),"URL credentials rejected");
 Check(!IsoDownloads.TrustedUri("Fedora",new Uri("https://dl.fedoraproject.org:8443/test.iso")),"unexpected port rejected");
+Check(IsoDownloads.TrustedUri("Debian",new Uri("https://saimei.ftp.acc.umu.se/debian-cd/current/amd64/iso-cd/debian.iso")),"official Debian storage redirect accepted");
+Check(!IsoDownloads.TrustedUri("Debian",new Uri("https://saimei.ftp.acc.umu.se.evil.invalid/debian.iso")),"Debian storage lookalike domain rejected");
 await Reject(()=>Task.Run(()=>IsoDownloads.MicrosoftSource("https://download.microsoft.com/MediaCreationTool.exe",null)),"Microsoft executables are not run or treated as ISOs");
 await Reject(()=>Task.Run(()=>IsoDownloads.MicrosoftSource("https://download.microsoft.com/Windows.iso","bad")),"invalid publisher checksum rejected before download");
 Check(IsoDownloads.UbuntuVersion("<a href='24.04/'>LTS</a><a href='26.04/'>LTS</a><a href='26.10/'>new</a>")=="26.04","newest stable Ubuntu LTS folder selected");
@@ -29,6 +31,9 @@ try
     using var good=new HttpClient(new Fixture(_=>new(HttpStatusCode.OK){Content=new ByteArrayContent(iso)}));
     var downloaded=await IsoDownloads.Download(source,destination,_=>{},_=>{},transport:good);
     Check(downloaded.PublisherHashVerified&&File.ReadAllBytes(destination).AsSpan().SequenceEqual(iso),"ISO download, SHA-256 and filesystem validation succeed");
+    var debianSource=source with{Provider="Debian",Url=new Uri("https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/test.iso")};
+    using var debianRedirect=new HttpClient(new Fixture(request=>{if(request.RequestUri!.Host=="cdimage.debian.org"){var r=new HttpResponseMessage(HttpStatusCode.Redirect);r.Headers.Location=new Uri("https://saimei.ftp.acc.umu.se/debian-cd/current/amd64/iso-cd/test.iso");return r;}return new(HttpStatusCode.OK){Content=new ByteArrayContent(iso)};}));
+    Check((await IsoDownloads.Download(debianSource,Path.Combine(folder,"debian.iso"),_=>{},_=>{},transport:debianRedirect)).PublisherHashVerified,"Debian redirect keeps official checksum verification");
     byte[] previous=File.ReadAllBytes(destination),bad=(byte[])iso.Clone();bad[300]^=1;
     using var corrupt=new HttpClient(new Fixture(_=>new(HttpStatusCode.OK){Content=new ByteArrayContent(bad)}));
     await Reject(()=>IsoDownloads.Download(source,destination,_=>{},_=>{},transport:corrupt),"changed ISO rejected by publisher checksum");

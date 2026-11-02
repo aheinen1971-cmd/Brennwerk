@@ -1,4 +1,8 @@
-# Brennwerk 0.4.1
+# Brennwerk 0.4.2
+
+- Fehler aus einem echten Debian-ISO-Download behoben: Die offizielle
+  HTTPS-Weiterleitung nach `*.ftp.acc.umu.se` wird zugelassen. Gefälschte Domains
+  bleiben gesperrt; die offizielle SHA-256-Prüfung bleibt verpflichtend.
 
 - Windows-ISO-Download über die offizielle Microsoft-Seite direkt in der App.
 - Alternativ frischen Microsoft-ISO-Link einfügen; optionale Microsoft-SHA-256-Prüfung.
