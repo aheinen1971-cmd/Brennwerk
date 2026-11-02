@@ -9,6 +9,20 @@ public partial class App : Application
 {
     protected override async void OnStartup(StartupEventArgs e)
     {
+        if(e.Args.Length>=2&&e.Args[0]=="--iso-page-test")
+        {
+            base.OnStartup(e);MainWindow? main=null;IsoDownloadWindow? download=null;
+            try
+            {
+                main=new MainWindow();main.Show();download=new IsoDownloadWindow(main,true);download.Show();
+                var completed=await Task.WhenAny(download.MicrosoftReady,Task.Delay(TimeSpan.FromSeconds(60)));
+                if(completed!=download.MicrosoftReady||!await download.MicrosoftReady)throw new IOException("Microsoft-Seite konnte im eingebauten Downloadfenster nicht erfolgreich geladen werden.");
+                File.WriteAllText(e.Args[1],"PASS: Published application loads the official Microsoft Windows ISO page using WebView2. No ISO downloaded, no installation started.");Shutdown(0);
+            }
+            catch(Exception ex){File.WriteAllText(e.Args[1],"FAIL: "+ex);Shutdown(1);}
+            finally{download?.Close();main?.Close();}
+            return;
+        }
         if(e.Args.Length==2&&e.Args[0]=="--apply-update")
         {
             base.OnStartup(e);

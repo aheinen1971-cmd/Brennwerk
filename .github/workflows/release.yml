@@ -19,7 +19,10 @@ jobs:
       - name: Validate update protocol
         shell: pwsh
         run: dotnet run --project tools/UpdaterTests/UpdaterTests.csproj -c Release
-      - name: Build single-file EXE
+      - name: Validate ISO downloads
+        shell: pwsh
+        run: dotnet run --project tools/IsoDownloadTests/IsoDownloadTests.csproj -c Release
+      - name: Publish single-file EXE
         shell: pwsh
         run: dotnet publish Brennwerk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o package
       - name: Sign release description

@@ -39,6 +39,17 @@ public partial class MainWindow : Window
         finally{checkingUpdates=false;}
     }
     bool IsDisc => DiscMode.IsChecked == true || DataMode.IsChecked == true;
+    void GetIso(object sender,RoutedEventArgs e)
+    {
+        if(busy)return;
+        var window=new IsoDownloadWindow(this,WindowsMode.IsChecked==true);
+        if(window.ShowDialog()==true&&window.Result is {} result)
+        {
+            if(result.Provider=="Windows")WindowsMode.IsChecked=true;else RawMode.IsChecked=true;
+            ImagePath.Text=result.Path;ImageInfo.Text=$"{new FileInfo(result.Path).Length/1073741824.0:F2} GiB · {Path.GetFileName(result.Path)}";
+            AddLog(result.PublisherHashVerified?"Original-ISO heruntergeladen und mit der Anbieter-Prüfsumme bestätigt.":"Original-ISO von Microsoft geladen; keine Anbieter-Vergleichsprüfsumme angegeben.");
+        }
+    }
     void OpenMedia(object sender,RoutedEventArgs e) { if(!busy) new MediaWindow(this).ShowDialog(); }
     public MainWindow()
     {
@@ -58,6 +69,7 @@ public partial class MainWindow : Window
         Verify.Visibility = IsDisc ? Visibility.Collapsed : Visibility.Visible; BrowseButton.Content = data ? "Ordner wählen …" : "Datei wählen …";
         SaveIsoButton.Visibility = data ? Visibility.Visible : Visibility.Collapsed;
         StartButton.Content = IsDisc ? "Disc brennen" : "USB-Stick erstellen";
+        GetIsoButton.Visibility=IsDisc?Visibility.Collapsed:Visibility.Visible;GetIsoButton.Content=win?"Windows-ISO von Microsoft holen …":"Aktuelle Linux-ISO holen …";
         TargetHint.Text = IsDisc ? "Leeren Rohling einlegen und Brenner auswählen. Kapazität wird vor dem Schreiben geprüft." : "Nur USB-Datenträger; System-, Start- und schreibgeschützte Laufwerke sind gesperrt.";
         ImagePath.Clear(); ImageInfo.Text = "Noch keine Quelle ausgewählt.";
         await Refresh();

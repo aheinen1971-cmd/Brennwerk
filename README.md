@@ -1,6 +1,45 @@
-# Brennwerk 0.3.0 – Einzeldatei mit signiertem Updatekanal
+# Brennwerk 0.4.0 – Original-ISOs und signierter Updatekanal
 
 Eine eigenständige Windows-App für Daten-Discs, ISO-Abbilder und bootfähige USB-Sticks.
+
+## Windows- und Linux-ISOs direkt herunterladen
+
+Im Modus **Windows → USB** auf **Windows-ISO von Microsoft holen** klicken.
+Die offizielle Microsoft-Seite wird im Programm geöffnet. Dort die aktuelle
+Windows-11-ISO und Sprache auswählen und den ISO-Download starten. Brennwerk
+fragt nach dem Speicherort auf dem PC und übernimmt den Download. EXE-Dateien
+wie der Installationsassistent werden dabei nicht ausgeführt. Eine von Microsoft
+veröffentlichte SHA-256-Prüfsumme kann vor dem Download optional eingegeben werden.
+Ohne diese Eingabe prüft die App Dateigröße und ISO-/UDF-Struktur und berechnet
+SHA-256, vergleicht aber keine Microsoft-Vergleichsprüfsumme.
+
+Die eingebaute Microsoft-Seite benötigt Microsoft Edge WebView2 Runtime. Falls
+sie fehlt oder Microsoft die Seite nicht lädt, kann die offizielle Seite im
+Browser geöffnet und ein dort erzeugter Microsoft-ISO-Link eingefügt werden.
+Microsofts zeitlich begrenzte Links werden nicht fest eingebaut oder als
+dauerhafter Kanal gespeichert. Edition und Sprache werden bewusst bei Microsoft
+ausgewählt; die Anwendung startet weder ein Windows-Upgrade noch akzeptiert sie
+automatisch Vertragsbedingungen.
+
+Im Modus **Linux / IMG → USB** auf **Aktuelle Linux-ISO holen** klicken. Zur Wahl:
+
+- Ubuntu Desktop: neueste verfügbare LTS-Punktversion, amd64.
+- Debian: aktuelle Standard-Netinstall-ISO, amd64; während der Installation ist
+  zusätzlich Internet für weitere Pakete erforderlich.
+- Fedora Workstation: aktuelle stabile Veröffentlichung, x86_64; Betas werden
+  übersprungen.
+
+**Aktuelle Version suchen** lädt die offiziellen Releaseinformationen und die
+passende SHA-256-Prüfsumme. Der ISO-Download bleibt auf den offiziellen Servern
+der gewählten Anbieter; für Fedora wird der kanonische Fedora-Server verwendet.
+Nach erfolgreicher Hash- und ISO-Strukturprüfung wird die Datei automatisch in
+den richtigen USB-Modus übernommen. Neue Versionen werden beim erneuten Suchen
+ermittelt; es gibt keinen unbeaufsichtigten, wiederkehrenden Gigabyte-Download.
+
+Downloads lassen sich abbrechen. Unvollständige Dateien werden entfernt, eine
+vorhandene Zieldatei wird erst nach erfolgreicher Prüfung ersetzt. Die App
+startet nach einem Download nicht automatisch das Löschen oder Schreiben eines
+USB-Sticks. Dafür muss weiterhin ein Ziel ausgewählt und bestätigt werden.
 
 ## Updates
 
