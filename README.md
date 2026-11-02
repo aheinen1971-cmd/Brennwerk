@@ -1,6 +1,39 @@
-# Brennwerk 0.5.0 – Abbild-Erkennung und USB-Bootverfahren
+# Brennwerk 0.6.0 – Windows- und Linux-Download-Assistenten
 
 Eine eigenständige Windows-App für Daten-Discs, ISO-Abbilder und bootfähige USB-Sticks.
+
+## Geführte Downloads und automatische Quellenprüfung
+
+Windows öffnet jetzt zuerst einen Download-Assistenten: Windows 11 (aktuelle
+Microsoft-Ausgabe), Intel/AMD x64 oder Arm64, Edition und Sprache auswählen.
+Editionen und Sprachen werden über das öffentliche Formular der offiziellen
+Microsoft-Seite geladen. Der Assistent übernimmt den dort frisch erzeugten
+ISO-Link und die veröffentlichte SHA-256 der gewählten Sprache. Vorhandene Links
+werden nach einer geänderten Auswahl verworfen; spätestens nach einer Stunde
+muss der Download neu vorbereitet werden. Andere Windows-Versionen werden in
+diesem Assistenten derzeit nicht angeboten.
+
+**Microsoft-Seite (Alternative)** bleibt im selben Fenster erhalten, außerdem
+die externe Browser- und Direktlink-Option. Beim Umschalten werden alte Links
+und Prüfsummen aus dem Assistenten entfernt. Bei geänderten Formularen, einer
+Microsoft-Sperre oder fehlender Prüfsumme wird kein Direktdownload erfunden.
+Es werden keine privaten Microsoft-Schnittstellen oder fremden Skripte genutzt.
+Auch der Assistent benötigt die vorhandene WebView2 Runtime.
+
+Der Linux-Katalog enthält 27 Einträge einschließlich Mint Cinnamon, MATE und Xfce,
+Arch, Manjaro, openSUSE, Kali, Pop!_OS, Zorin, MX, Tails und weiterer Distributionen.
+Die Auswahl startet die Quellenprüfung automatisch; **Erneut prüfen** wiederholt sie.
+Für Ubuntu LTS, Debian Netinstall, Fedora Workstation und die drei Mint-Ausgaben
+werden aktuelle ISO und SHA-256 automatisch ermittelt. Mint wird über die aktuelle
+Ausgabenseite und den dort verlinkten Linux-Mint-Publikationsserver gefunden.
+
+Bei den übrigen Katalogeinträgen wird die Erreichbarkeit der offiziellen Seite
+geprüft; Versions-/ISO-Ermittlung und automatische Prüfsummenübernahme sind dort
+noch nicht implementiert. Die Seite kann für die passende Auswahl geöffnet werden.
+Ein HTTP-Fehler oder eine blockierte automatische Anfrage wird angezeigt; die
+offizielle Seite bleibt aufrufbar. Der Katalog ist keine vollständige Liste aller
+existierenden Distributionen. Erst nach Auswahl des Speicherorts beginnt ein
+Direktdownload; die automatische Suche lädt keine vollständigen ISO-Dateien.
 
 ## USB-Abbilder erkennen und Auftrag prüfen
 
@@ -36,13 +69,14 @@ Echte USB-Schreib- und BIOS-/UEFI-Bootversuche stehen weiterhin aus.
 ## Windows- und Linux-ISOs direkt herunterladen
 
 Im Modus **Windows → USB** auf **Windows-ISO von Microsoft holen** klicken.
-Die offizielle Microsoft-Seite wird im Programm geöffnet. Dort die aktuelle
-Windows-11-ISO und Sprache auswählen und den ISO-Download starten. Brennwerk
+Im Assistenten Architektur, aktuelle Windows-11-Edition und Sprache auswählen.
+Alternativ **Microsoft-Seite (Alternative)** öffnen und dort auswählen. Brennwerk
 fragt nach dem Speicherort auf dem PC und übernimmt den Download. EXE-Dateien
 wie der Installationsassistent werden dabei nicht ausgeführt. Eine von Microsoft
-veröffentlichte SHA-256-Prüfsumme kann vor dem Download optional eingegeben werden.
-Ohne diese Eingabe prüft die App Dateigröße und ISO-/UDF-Struktur und berechnet
-SHA-256, vergleicht aber keine Microsoft-Vergleichsprüfsumme.
+veröffentlichte SHA-256-Prüfsumme wird im Assistenten automatisch übernommen.
+In der Seiten-/Direktlink-Alternative kann sie optional eingegeben werden.
+Ohne diese Eingabe prüft die Alternative Dateigröße und ISO-/UDF-Struktur und
+berechnet SHA-256, vergleicht aber keine Microsoft-Vergleichsprüfsumme.
 
 Die eingebaute Microsoft-Seite benötigt Microsoft Edge WebView2 Runtime. Falls
 sie fehlt oder Microsoft die Seite nicht lädt, kann die offizielle Seite im
@@ -59,9 +93,11 @@ Im Modus **Linux / IMG → USB** auf **Aktuelle Linux-ISO holen** klicken. Zur W
   zusätzlich Internet für weitere Pakete erforderlich.
 - Fedora Workstation: aktuelle stabile Veröffentlichung, x86_64; Betas werden
   übersprungen.
+- Linux Mint: aktuelle stabile Cinnamon-, MATE- und Xfce-Ausgaben, 64 Bit.
+- Weitere Katalogeinträge: offizielle Downloadseite mit Erreichbarkeitsprüfung.
 
-**Aktuelle Version suchen** lädt die offiziellen Releaseinformationen und die
-passende SHA-256-Prüfsumme. Der ISO-Download bleibt auf den offiziellen Servern
+Die Auswahl startet automatisch; **Erneut prüfen** lädt die Releaseinformationen
+und passende SHA-256 bei unterstützten Direktdownloads erneut. Die ISO bleibt auf den offiziellen Servern
 der gewählten Anbieter; für Fedora wird der kanonische Fedora-Server verwendet.
 Debians offizielle Weiterleitung zum schwedischen Speicherverbund
 `ftp.acc.umu.se` und dessen Servern wird ebenfalls unterstützt; die Vergleichs-

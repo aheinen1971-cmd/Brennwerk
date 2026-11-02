@@ -22,6 +22,7 @@ public static class IsoDownloads
             "Ubuntu"=>host=="releases.ubuntu.com",
             "Debian"=>host=="cdimage.debian.org"||host=="ftp.acc.umu.se"||host.EndsWith(".ftp.acc.umu.se",StringComparison.OrdinalIgnoreCase),
             "Fedora"=>host=="fedoraproject.org"||host.EndsWith(".fedoraproject.org",StringComparison.OrdinalIgnoreCase),
+            "Mint" or "MintMate" or "MintXfce"=>host is "linuxmint.com" or "www.linuxmint.com" or "pub.linuxmint.io" or "mirrors.kernel.org",
             _=>false
         };
     }
@@ -102,6 +103,15 @@ public static class IsoDownloads
     {
         using var timeout=CancellationTokenSource.CreateLinkedTokenSource(token);timeout.CancelAfter(TimeSpan.FromSeconds(45));
         using var owned=transport==null?CreateClient():null;var client=transport??owned!;
+        if(provider is "Mint" or "MintMate" or "MintXfce")
+        {
+            string edition=provider=="MintMate"?"MATE":provider=="MintXfce"?"Xfce":"Cinnamon";
+            string main=await Text(client,provider,"https://linuxmint.com/download.php",timeout.Token);
+            string page=MintEdition(main,edition);
+            var source=MintSource(await Text(client,provider,page,timeout.Token),provider,edition);
+            string hashes=await Text(client,provider,new Uri(source.Url,"sha256sum.txt").AbsoluteUri,timeout.Token);
+            return source with{Sha256=Checksum(hashes,source.FileName)};
+        }
         if(provider=="Fedora")return FedoraSource(await Text(client,provider,"https://fedoraproject.org/releases.json",timeout.Token));
         string folder,title;
         if(provider=="Ubuntu")
@@ -114,6 +124,20 @@ public static class IsoDownloads
         string name=IsoName(await Text(client,provider,folder,timeout.Token),provider);
         string checksum=Checksum(await Text(client,provider,folder+"SHA256SUMS",timeout.Token),name);
         return new(provider,title,Regex.Match(name,@"[0-9]+\.[0-9]+(?:\.[0-9]+)*").Value,new Uri(folder+name),name,checksum,null);
+    }
+    public static string MintEdition(string html,string edition)
+    {
+        if(edition is not "Cinnamon" and not "MATE" and not "Xfce")throw new IOException("Unbekannte Mint-Ausgabe.");
+        var match=Regex.Match(html,Regex.Escape(edition)+@" Edition[\s\S]*?href=[""'](?<page>edition\.php\?id=[0-9]+)[""']",RegexOptions.IgnoreCase);
+        if(!match.Success)throw new IOException("Die aktuelle Mint-Ausgabe konnte nicht eindeutig gefunden werden.");
+        return "https://linuxmint.com/"+match.Groups["page"].Value;
+    }
+    public static IsoSource MintSource(string html,string provider,string edition)
+    {
+        string flavor=edition.ToLowerInvariant();
+        var match=Regex.Match(html,@"https://pub\.linuxmint\.io/stable/(?<version>[0-9]+\.[0-9]+)/(?<name>linuxmint-\k<version>-"+Regex.Escape(flavor)+@"-64bit\.iso)");
+        if(!match.Success)throw new IOException("Kein eindeutiges stabiles Mint-ISO auf dem offiziell verlinkten Server gefunden.");
+        return new(provider,"Linux Mint "+edition+" · Intel/AMD 64 Bit",match.Groups["version"].Value,new Uri(match.Value),match.Groups["name"].Value,null,null);
     }
     public static void ValidateIsoFile(string path)
     {

@@ -1,19 +1,22 @@
-# Brennwerk 0.5.0
+# Brennwerk 0.6.0
 
-- Automatische Erkennung von Windows-Installationsdateien und partitionierten
-  Hybrid-/IMG-Abbildern; passender USB-Modus wird automatisch gewählt.
-- Windows: UEFI mit GPT/FAT32, BIOS/Legacy mit MBR/FAT32 oder beide mit MBR/FAT32.
-- Fehlende BIOS-/UEFI-Startdateien werden vor der Löschbestätigung abgefangen.
-  Der USB-Worker prüft diese Auswahl nochmals vor dem Löschen.
-- BIOS-Bootcode ausschließlich über die vorhandene Windows-Systemdatei
-  bootsect.exe; keine EXE aus der ausgewählten ISO wird gestartet.
-- Linux-/IMG-Layout bleibt unverändert; kein nachträglicher Umbau des Bootverfahrens.
-- Erweiterte Zusammenfassung: Quelldatei, Ziel, Seriennummer, Datenträgernummer,
-  Bootverfahren, Partitionierung und Datenprüfung. Bestätigung mit exakter Nummer.
-- Weiterhin eine einzelne EXE mit eingebautem USB-Modul, offiziellen ISO-Downloads
-  und signiertem GitHub-Updatekanal.
+- Geführter Windows-11-Download: x64/Arm64, aktuelle Microsoft-Edition, Sprache,
+  frischer offizieller ISO-Link und automatisch zugeordnete Microsoft-SHA-256.
+- Microsoft-Seite im Programm bleibt als Alternative erhalten, ebenso Browser
+  und Direktlink. Alte Assistentenlinks und Prüfsummen werden beim Umschalten verworfen.
+- Linux-Assistent mit 27 Katalogeinträgen und automatischer Prüfung bei der Auswahl.
+- Direkte Versions-, ISO- und Prüfsummenermittlung für Ubuntu LTS, Debian Netinstall,
+  Fedora Workstation und Mint Cinnamon, MATE sowie Xfce.
+- Weitere Distributionen mit automatischer Erreichbarkeitsprüfung ihrer offiziellen
+  Seite. Deren ISO-Auswahl und Prüfanleitung erfolgen noch auf der Anbieterseite.
+- Keine privaten Microsoft-APIs, keine fremden Downloadskripte, keine gespeicherten
+  zeitlich begrenzten Downloadlinks im Programm.
 
-Abbild-Erkennung, Boot-Auswahl, Schutzprüfungen und Oberfläche wurden ohne echte
-USB-Schreibzugriffe geprüft. Die Windows-Dateistruktur-Test-ISO prüft die Erkennung,
-enthält aber kein bootfähiges Betriebssystem. Echte USB-Schreib- und BIOS-/UEFI-
-Bootversuche stehen aus. Windows-Hardwareanforderungen werden nicht verändert.
+Live geprüft: Windows x64 und Arm64 jeweils Deutsch, alle sechs direkten Linux-
+Katalogabfragen, Wechsel zur Microsoft-Alternative und zurück, Verwerfen alter
+Auswahlen sowie ISO-Antworten von Microsoft und Mint mit jeweils 64 KiB Testdaten.
+Keine erneuten vollständigen ISO-Downloads, keine USB-Schreib- oder Bootversuche.
+Die drei zusätzlich geprüften Seiten MX, Lubuntu und Raspberry Pi OS lehnten
+hier automatische HTTP-Abfragen ab; ihre offiziellen Seiten bleiben aufrufbar.
+
+Bei späteren wiederholten Live-Tests verweigerte Microsoft neue Links mit Code 715-123130. Der Assistent bricht dann mit der Anbieterantwort ab und lässt die Microsoft-Alternative verfügbar; ein erfolgreicher Linkabruf kann nicht erzwungen werden.
