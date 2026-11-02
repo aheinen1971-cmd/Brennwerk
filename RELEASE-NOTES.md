@@ -1,4 +1,4 @@
-# Brennwerk 0.4.0
+# Brennwerk 0.4.1
 
 - Windows-ISO-Download über die offizielle Microsoft-Seite direkt in der App.
 - Alternativ frischen Microsoft-ISO-Link einfügen; optionale Microsoft-SHA-256-Prüfung.

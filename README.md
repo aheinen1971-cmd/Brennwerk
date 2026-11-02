@@ -1,4 +1,4 @@
-# Brennwerk 0.4.0 – Original-ISOs und signierter Updatekanal
+# Brennwerk 0.4.1 – Original-ISOs und signierter Updatekanal
 
 Eine eigenständige Windows-App für Daten-Discs, ISO-Abbilder und bootfähige USB-Sticks.
 

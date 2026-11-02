@@ -56,7 +56,20 @@ finally
     if(stage!=null)
     {
         string full=Path.GetFullPath(stage),root=Path.TrimEndingDirectorySeparator(Path.GetFullPath(Updates.CacheDirectory))+Path.DirectorySeparatorChar;
-        if(full.StartsWith(root,StringComparison.OrdinalIgnoreCase)&&Guid.TryParseExact(Path.GetFileName(full),"N",out _))Directory.Delete(full,true);
+        if(full.StartsWith(root,StringComparison.OrdinalIgnoreCase)&&Guid.TryParseExact(Path.GetFileName(full),"N",out _))
+        {
+            for(int attempt=0;attempt<20;attempt++)
+            {
+                try{if(Directory.Exists(full))Directory.Delete(full,true);break;}
+                catch(Exception ex)when(ex is IOException or UnauthorizedAccessException)
+                {
+                    // Windows or antivirus may still hold the exited helper briefly.
+                    // Protocol assertions above already completed; cleanup is best effort.
+                    if(attempt==19)Console.WriteLine("NOTE: temporary test helper remains locked; cleanup deferred.");
+                    else await Task.Delay(250);
+                }
+            }
+        }
     }
 }
 Console.WriteLine($"{passed} update checks passed. No real application or media was replaced.");
