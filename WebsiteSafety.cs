@@ -18,13 +18,16 @@ public static class WebsiteSafety
     public static bool Page(string provider,Uri uri)
     {
         if(provider=="Windows")return MicrosoftPage(uri);
+        var alternative=LinuxCatalog.Alternatives.SingleOrDefault(x=>x.Id==provider);
+        if(alternative!=null)return LinuxCatalog.Matches(alternative,uri);
         var official=LinuxCatalog.Items.SingleOrDefault(x=>x.Id==provider);
         if(official==null||!Https(uri))return false;
         string host=new Uri(official.Page).IdnHost;
         string alias=host.StartsWith("www.",StringComparison.Ordinal)?host[4..]:"www."+host;
-        return uri.IdnHost==host||uri.IdnHost==alias;
+        return uri.IdnHost==host||uri.IdnHost==alias||LinuxCatalog.Alternatives.Any(x=>x.Provider==provider&&LinuxCatalog.Matches(x,uri));
     }
-    public static string Start(string provider)=>provider=="Windows"?IsoDownloads.MicrosoftPage:LinuxCatalog.Items.Single(x=>x.Id==provider).Page;
+    public static string Start(string provider)=>provider=="Windows"?IsoDownloads.MicrosoftPage:LinuxCatalog.Alternatives.SingleOrDefault(x=>x.Id==provider)?.Page??LinuxCatalog.Items.Single(x=>x.Id==provider).Page;
+    public static int SourceCount=>LinuxCatalog.Items.Count+LinuxCatalog.Alternatives.Count+1;
     public static bool Due(WebsiteReport? report,DateTime utc)=>report==null||report.CompletedUtc>utc||utc-report.CompletedUtc>=Interval;
     public static async Task<WebsiteResult> Check(string provider,string name,string address,CancellationToken token=default,HttpClient? transport=null)
     {
@@ -62,7 +65,7 @@ public static class WebsiteSafety
     }
     public static async Task<WebsiteReport> CheckAll(CancellationToken token=default)
     {
-        var targets=new[]{("Windows","Microsoft",IsoDownloads.MicrosoftPage)}.Concat(LinuxCatalog.Items.Select(x=>(x.Id,x.Name,x.Page)));
+        var targets=new[]{("Windows","Microsoft",IsoDownloads.MicrosoftPage)}.Concat(LinuxCatalog.Items.Select(x=>(x.Id,x.Name,x.Page))).Concat(LinuxCatalog.Alternatives.Select(x=>(x.Id,x.Name,x.Page)));
         using var concurrency=new SemaphoreSlim(3);
         var results=await Task.WhenAll(targets.Select(async item=>
         {
@@ -76,7 +79,7 @@ public static class WebsiteSafety
         {
             if(!File.Exists(path)||new FileInfo(path).Length>256*1024)return null;
             var report=JsonSerializer.Deserialize<WebsiteReport>(File.ReadAllText(path));
-            if(report==null||report.Results==null||report.Results.Length!=LinuxCatalog.Items.Count+1||report.CompletedUtc>DateTime.UtcNow.AddMinutes(1))return null;
+            if(report==null||report.Results==null||report.Results.Length!=SourceCount||report.CompletedUtc>DateTime.UtcNow.AddMinutes(1))return null;
             var ids=new HashSet<string>(StringComparer.Ordinal);
             foreach(var result in report.Results)
                 if(result==null||string.IsNullOrWhiteSpace(result.Provider)||string.IsNullOrWhiteSpace(result.Name)||!ids.Add(result.Provider)||result.Address!=Start(result.Provider)||!Uri.TryCreate(result.Address,UriKind.Absolute,out var start)||!Page(result.Provider,start)||

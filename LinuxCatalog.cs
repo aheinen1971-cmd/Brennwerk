@@ -3,8 +3,24 @@ public sealed record LinuxDistribution(string Id,string Name,string Page,bool Di
 {
     public override string ToString()=>Name;
 }
+public sealed record LinuxAlternative(string Id,string Provider,string Name,string Page,string Evidence,string Note)
+{
+    public override string ToString()=>Name;
+}
 public static class LinuxCatalog
 {
+    public static IReadOnlyList<LinuxAlternative> Alternatives {get;}=Array.AsReadOnly<LinuxAlternative>([
+        new("MX:mirror","MX","MX · offizieller Spiegelserver","https://rsync-mxlinux.org/MX/Final/","https://mxlinux.org/wiki/system/iso-download-mirrors/","Ausgabe auswählen und deren SHA-256-/Signaturdatei mit herunterladen."),
+        new("MX:sourceforge","MX","MX · SourceForge-Projekt","https://sourceforge.net/projects/mx-linux/files/Final/","https://mxlinux.org/wiki/system/iso-download-mirrors/","Nur das MX-Linux-Projekt ist freigegeben; Ausgabe und Prüfsumme auf der Seite wählen."),
+        new("Lubuntu:ubuntu","Lubuntu","Lubuntu · Ubuntu-CD-Server","https://cdimage.ubuntu.com/lubuntu/releases/","https://help.ubuntu.com/community/UbuntuHashes","Version und release-Ordner wählen; SHA256SUMS zur passenden ISO verwenden."),
+        new("Raspberry:arm64","Raspberry","Raspberry Pi OS · 64-Bit-Archiv","https://downloads.raspberrypi.com/raspios_arm64/images/","https://www.raspberrypi.com/software/operating-systems/","Abbild für Raspberry Pi, nicht für normale Intel-/AMD-PCs. IMG.XZ zuerst entpacken; Prüfsumme bezieht sich auf die heruntergeladene Datei."),
+        new("Raspberry:armhf","Raspberry","Raspberry Pi OS · 32-Bit-Archiv","https://downloads.raspberrypi.com/raspios_armhf/images/","https://www.raspberrypi.com/software/operating-systems/","Abbild für Raspberry Pi. Passende Version und Prüfsumme wählen; IMG.XZ vor dem USB-Schreiben entpacken.")
+    ]);
+    public static bool Matches(LinuxAlternative entry,Uri uri)
+    {
+        var official=new Uri(entry.Page);
+        return WebsiteSafety.Https(uri)&&uri.IdnHost==official.IdnHost&&uri.AbsolutePath.StartsWith(official.AbsolutePath,StringComparison.Ordinal);
+    }
     public static IReadOnlyList<LinuxDistribution> Items {get;}=Array.AsReadOnly<LinuxDistribution>([
         new("Ubuntu","Ubuntu Desktop LTS","https://ubuntu.com/download/desktop",true,"Desktop LTS · Intel/AMD 64 Bit"),
         new("Debian","Debian","https://www.debian.org/distrib/",true,"Netinstall · Intel/AMD 64 Bit"),

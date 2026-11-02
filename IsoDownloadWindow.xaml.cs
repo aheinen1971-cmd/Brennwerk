@@ -37,6 +37,7 @@ public partial class IsoDownloadWindow : Window
         available=null;DownloadButton.IsEnabled=false;Progress.Value=0;bool windows=Provider.SelectedIndex==0;
         WindowsOptions.Visibility=windows?Visibility.Visible:Visibility.Collapsed;BrowserBorder.Visibility=windows&&alternative?Visibility.Visible:Visibility.Hidden;WizardBorder.Visibility=windows&&!alternative?Visibility.Visible:Visibility.Collapsed;LinuxInfo.Visibility=windows?Visibility.Collapsed:Visibility.Visible;
         FindButton.Visibility=windows?Visibility.Collapsed:Visibility.Visible;ReleaseInfo.Text="Oben auf „Aktuelle Version suchen“ klicken.";SourceInfo.Text="";
+        var alternatives=LinuxCatalog.Alternatives.Where(x=>x.Provider==SelectedProvider).ToArray();AlternativeSource.ItemsSource=alternatives;AlternativeSource.SelectedIndex=alternatives.Length>0?0:-1;AlternativeSources.Visibility=!windows&&alternatives.Length>0?Visibility.Visible:Visibility.Collapsed;
         Description.Text=windows?"Windows, Architektur, Edition und Sprache auswählen. Der Assistent verwendet das öffentliche Microsoft-Formular. Die Microsoft-Seite bleibt als Alternative erhalten.":SelectedDistro!.Edition+" · Die Quelle wird automatisch geprüft.";
         Status.Text=windows?"Microsoft-Auswahl öffnen …":"Bereit für die Versionssuche";
         if(windows)await EnsureMicrosoft();else await FindLinux();
@@ -163,10 +164,22 @@ public partial class IsoDownloadWindow : Window
         if(SelectedDistro is not {} distro)return;
         await OpenCheckedPage(distro.Id,distro.Name,distro.Page);
     }
+    void AlternativeSourceChanged(object sender,SelectionChangedEventArgs e)
+    {
+        if(AlternativeNote==null)return;AlternativeNote.Text=AlternativeSource.SelectedItem is LinuxAlternative item?item.Page+"\n"+item.Note+"\nDie Seite wird vor dem Öffnen geprüft; Auswahl und Download erfolgen im Browser.":"";
+        if(IsLoaded&&!working&&SelectedDistro is {} distro&&AlternativeSource.SelectedItem is LinuxAlternative selected)
+        {
+            ReleaseInfo.Text=distro.Name+" · Alternative gewählt";SourceInfo.Text="Ausgewählte Alternative: "+selected.Page;Status.Text="Die ausgewählte Adresse wird vor dem Öffnen erneut geprüft.";
+        }
+    }
+    async void OpenAlternativeSource(object sender,RoutedEventArgs e)
+    {
+        if(AlternativeSource.SelectedItem is LinuxAlternative item)await OpenCheckedPage(item.Id,item.Name,item.Page);
+    }
     void AddLog(string text)=>Dispatcher.Invoke(()=>{Log.AppendText(text+Environment.NewLine);Log.ScrollToEnd();});
     void SetWorking(bool value)
     {
-        working=value;Options.IsEnabled=!value;BrowserBorder.IsEnabled=!value;WizardBorder.IsEnabled=!value;DistroPageButton.IsEnabled=!value;CancelButton.IsEnabled=value;
+        working=value;Options.IsEnabled=!value;BrowserBorder.IsEnabled=!value;WizardBorder.IsEnabled=!value;DistroPageButton.IsEnabled=!value;AlternativeSources.IsEnabled=!value;CancelButton.IsEnabled=value;
         UpdateDownloadButton();
         Progress.IsIndeterminate=value;
     }
@@ -182,7 +195,20 @@ public partial class IsoDownloadWindow : Window
             var distro=SelectedDistro??throw new IOException("Bitte eine Linux-Distribution auswählen.");
             if(!distro.Direct)
             {
-                await CheckOfficialPage(distro,cancellation.Token);
+                var primary=await WebsiteSafety.Check(distro.Id,distro.Name,distro.Page,cancellation.Token);
+                if(primary.State!="Verified")
+                {
+                    AddLog(primary.Message);
+                    foreach(var alternative in LinuxCatalog.Alternatives.Where(x=>x.Provider==distro.Id))
+                    {
+                        var check=await WebsiteSafety.Check(alternative.Id,alternative.Name,alternative.Page,cancellation.Token);
+                        if(check.State!="Verified")continue;
+                        AlternativeSource.SelectedItem=alternative;ReleaseInfo.Text=distro.Name+" · Alternative erreichbar";SourceInfo.Text="Originalseite: "+primary.Message+"\nGeprüfte Alternative: "+check.FinalAddress;
+                        LinuxVerification.Text="Eine vom Anbieter verlinkte Alternative wurde gefunden. Ausgabe, Architektur und Prüfsumme auf der Downloadseite wählen. Brennwerk startet keinen unbeaufsichtigten Download und keine Installation.";
+                        Status.Text="Geprüfte Alternative wählen und im Browser öffnen.";return;
+                    }
+                    throw new IOException(primary.Message+" Keine automatisch bestätigte Alternative gefunden.");
+                }
                 ReleaseInfo.Text=distro.Name+" · offizielle Seite erreichbar";
                 SourceInfo.Text=distro.Edition+"\n"+distro.Page;
                 LinuxVerification.Text="Für diese Distribution wird noch kein eindeutiger Direktdownload ermittelt. Auf der offiziellen Seite Ausgabe und Architektur wählen und deren Prüfanleitung befolgen. Komprimierte Abbilder zuerst entpacken; die gespeicherte ISO/IMG anschließend im USB-Modus auswählen.";

@@ -14,6 +14,12 @@ Check(!WebsiteSafety.MicrosoftPage(new Uri("https://account.microsoft.com/")),"o
 Check(!WebsiteSafety.MicrosoftPage(new Uri("https://www.microsoft.com/redirect?url=https://evil.invalid")),"Microsoft redirector path not whitelisted");
 Check(!WebsiteSafety.MicrosoftPage(new Uri(IsoDownloads.MicrosoftPage+"?next=https://evil.invalid")),"unexpected Microsoft query rejected");
 Check(!WebsiteSafety.Page("Arch",new Uri("https://ubuntu.com/")),"legitimate but wrong provider rejected");
+Check(LinuxCatalog.Alternatives.Count==5&&LinuxCatalog.Alternatives.All(x=>WebsiteSafety.Page(x.Id,new Uri(x.Page))),"five pinned publisher-linked alternatives accepted");
+Check(!WebsiteSafety.Page("MX:sourceforge",new Uri("https://sourceforge.net/projects/other-project/files/Final/")),"SourceForge permission restricted to exact MX project folder");
+Check(!WebsiteSafety.Page("MX:mirror",new Uri("https://rsync-mxlinux.org/ANTIX/")),"MX mirror permission does not include unrelated distributions");
+Check(!WebsiteSafety.Page("Lubuntu:ubuntu",new Uri("https://cdimage.ubuntu.com/kubuntu/releases/")),"Lubuntu alternative restricted to its own release directory");
+Check(!WebsiteSafety.Page("Raspberry:arm64",new Uri("https://downloads.raspberrypi.com/raspios_armhf/images/")),"Raspberry architecture-specific alternative does not silently change architecture");
+Check(!WebsiteSafety.Page("MX:sourceforge",new Uri("https://sourceforge.net/projects/mx-linux/files/Final-evil/")),"similar mirror folder name cannot match trusted path prefix");
 using(var fake=new HttpClient(new Fixture(_=>new(HttpStatusCode.OK))))Check((await WebsiteSafety.Check("Arch","Arch",official,transport:fake)).State=="Verified","successful HTTPS source receives verified result");
 int requests=0;
 using(var fake=new HttpClient(new Fixture(_=>{requests++;return new(HttpStatusCode.Redirect){Headers={Location=new Uri("https://evil.invalid/download/")}};})))
@@ -47,8 +53,8 @@ Check(WebsiteSafety.Due(null,now)&&WebsiteSafety.Due(report,now.AddHours(-1)),"m
 string folder=Path.Combine(Path.GetTempPath(),"Brennwerk-website-tests-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(folder);string path=Path.Combine(folder,"websites.json");
 try
 {
-    var rows=new[]{new WebsiteResult("Windows","Microsoft",WebsiteSafety.Start("Windows"),null,now,"Verified","fixture")}.Concat(LinuxCatalog.Items.Select(x=>new WebsiteResult(x.Id,x.Name,x.Page,null,now,"Verified","fixture"))).ToArray();
-    report=new(now,rows);WebsiteSafety.Save(path,report);Check(WebsiteSafety.Load(path)?.Results.Length==28,"complete known-source report saved and loaded");
+    var rows=new[]{new WebsiteResult("Windows","Microsoft",WebsiteSafety.Start("Windows"),null,now,"Verified","fixture")}.Concat(LinuxCatalog.Items.Select(x=>new WebsiteResult(x.Id,x.Name,x.Page,null,now,"Verified","fixture"))).Concat(LinuxCatalog.Alternatives.Select(x=>new WebsiteResult(x.Id,x.Name,x.Page,null,now,"Verified","fixture"))).ToArray();
+    report=new(now,rows);WebsiteSafety.Save(path,report);Check(WebsiteSafety.Load(path)?.Results.Length==WebsiteSafety.SourceCount,"complete known-source report saved and loaded including alternatives");
     File.WriteAllText(path,"broken json");Check(WebsiteSafety.Load(path)==null,"damaged report discarded for automatic rebuild");
     var changed=rows.ToArray();changed[1]=changed[1] with{FinalAddress="https://evil.invalid/"};WebsiteSafety.Save(path,report with{Results=changed});Check(WebsiteSafety.Load(path)==null,"cached malicious redirect cannot inherit verified state");
     changed=rows.ToArray();changed[1]=changed[1] with{Address="https://ubuntu.com/other-path"};WebsiteSafety.Save(path,report with{Results=changed});Check(WebsiteSafety.Load(path)==null,"modified saved start address rejected even on legitimate host");

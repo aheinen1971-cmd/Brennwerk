@@ -1,6 +1,37 @@
-# Brennwerk 0.7.0 – Quellen absichern und alle sechs Stunden prüfen
+# Brennwerk 0.7.1 – Geprüfte alternative Downloadseiten
 
 Eine eigenständige Windows-App für Daten-Discs, ISO-Abbilder und bootfähige USB-Sticks.
+
+## Alternative Downloadseiten für MX, Lubuntu und Raspberry Pi OS
+
+Bei diesen drei Katalogeinträgen bietet der Linux-Assistent bekannte Alternativen
+an. Wenn die Hauptseite nicht bestätigt wird, werden die Alternativen live geprüft;
+die erste bestätigte Adresse wird zur Auswahl vorgeschlagen. Sie wird nicht
+ungefragt geöffnet. Die Ursprungsseite bleibt mit ihrem tatsächlichen Ergebnis
+gekennzeichnet. Vor dem Öffnen einer Alternative erfolgt erneut eine HTTPS-/URL-Prüfung.
+
+- MX Linux: `https://rsync-mxlinux.org/MX/Final/` und
+  `https://sourceforge.net/projects/mx-linux/files/Final/`.
+  Publisher-Nachweis: https://mxlinux.org/wiki/system/iso-download-mirrors/
+- Lubuntu: `https://cdimage.ubuntu.com/lubuntu/releases/`.
+  Ubuntu-Nachweis: https://help.ubuntu.com/community/UbuntuHashes
+- Raspberry Pi OS: `https://downloads.raspberrypi.com/raspios_arm64/images/` und
+  `https://downloads.raspberrypi.com/raspios_armhf/images/`.
+  Publisher-Nachweis (Archive-Links): https://www.raspberrypi.com/software/operating-systems/
+
+Die Freigaben gelten nur für die konkreten Hosts und Ordner. Andere SourceForge-
+Projekte oder beliebige Ordner auf diesen Servern werden dadurch nicht zugelassen.
+Alle fünf zusätzlichen Seiten werden in die Sechs-Stunden-Prüfung aufgenommen;
+der Prüfbericht enthält nun 33 Einträge statt 28. Alte unvollständige Berichte werden
+automatisch neu aufgebaut.
+
+Diese Alternativen sind Browser-Downloadseiten. Ausgabe, Version, Architektur und
+Datei müssen dort gewählt werden; die Prüfanleitung und passende Prüfsumme des
+Anbieters sind zu beachten. Brennwerk übernimmt hier noch keinen nativen Download
+und keinen automatischen Hashvergleich der extern gespeicherten Datei. Raspberry-
+Pi-Abbilder sind nicht für gewöhnliche Intel-/AMD-PCs bestimmt. IMG.XZ-Dateien müssen
+vor dem direkten USB-Schreiben entpackt werden; die Download-Prüfsumme bezieht sich
+auf die komprimierte Datei.
 
 ## Anbieteradressen und Sechs-Stunden-Prüfung
 

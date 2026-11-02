@@ -1,25 +1,19 @@
-# Brennwerk 0.7.0
+# Brennwerk 0.7.1
 
-- Fest hinterlegte, schreibgeschützte Anbieter-Liste; HTTPS, exakte Anbieterhosts
-  und bekannte www-Varianten werden vor Seitenaufrufen geprüft.
-- Fremde Weiterleitungen, Lookalike-Domains, URL-Anmeldedaten, unzulässige Ports
-  und HTTP-Rückstufungen werden vor dem Zugriff blockiert.
-- Microsoft-Assistent nur auf den freigegebenen Windows-11-Downloadseiten;
-  ISO-Transfers weiterhin über die gesondert freigegebenen Downloadserver.
-- WebView2-Zertifikatsfehler werden ausdrücklich abgebrochen. Keine TLS-Ausnahmen.
-- Neue Übersicht „Webseiten prüfen“ mit Status je Quelle, lesbaren Fehlerdetails,
-  letzter Prüfung und nächstem Prüftermin.
-- Automatische Prüfung alle sechs Stunden bei geöffnetem Programm. Überfällige
-  Prüfungen werden beim Start nachgeholt; keine Hintergrundaufgabe bei geschlossenem Programm.
-- Automatische Fehlerbehandlung: einmaliger Wiederholungsversuch an der bekannten
-  Originaladresse; beschädigte oder manipulierte gespeicherte Ergebnisse werden verworfen.
-- Bei blockierten/nicht erreichbaren Quellen wird zusätzlich nach einem signierten
-  Programm-Update gesucht, sofern automatische Updateprüfung aktiviert ist.
-  Installation bleibt von den bestehenden Updateeinstellungen und Leerlauf abhängig.
+- Alternative Downloadseiten für die drei Anbieter, deren Hauptseiten automatische
+  Abfragen ablehnen: MX Linux (Projektspiegel und SourceForge), Lubuntu (Ubuntu-
+  CD-Server), Raspberry Pi OS (offizielle 32-/64-Bit-Archive).
+- Der Assistent sucht bei einer nicht bestätigten Hauptseite nach einer bekannten,
+  live bestätigten Alternative und bietet diese ausdrücklich zur Auswahl an.
+- Auswahl und Dateidownload erfolgen auf diesen Seiten im Browser; dies sind keine
+  neuen nativen ISO-Direktdownloads. Passende Prüfsummen auf den Anbieterseiten beachten.
+- Raspberry-Pi-Abbilder sind für Raspberry Pi. Komprimierte IMG.XZ-Dateien vor dem
+  Schreiben entpacken; Architektur und Dateiprüfsumme passend auswählen.
+- Die fünf Alternativen gehören zur regelmäßigen Sechs-Stunden-Prüfung und werden
+  unmittelbar vor dem Öffnen erneut geprüft. Insgesamt 33 Prüfeinträge.
+- Freigaben sind auf konkrete Anbieter, Projekte und Ordner begrenzt. Andere
+  SourceForge-Projekte, fremde Distributionen oder ähnlich benannte Ordner bleiben gesperrt.
 
-Live-Ergebnis: 28 Katalogeinträge geprüft, 25 bestätigt und 3 Anbieter mit HTTP 403.
-Die Anbieterablehnungen werden nicht als repariert ausgegeben. Andere Domains,
-Zertifikate oder beliebige neue Seiten werden niemals automatisch freigegeben.
-Die Prüfung bestätigt Adresse, HTTPS und HTTP-Weiterleitungen, nicht sämtliche
-Inhalte oder die Sicherheit eines Betriebssystems. Weitere Navigation in einem
-externen Browser wird von dessen eigenen Schutzfunktionen verwaltet.
+Alle fünf Alternativseiten lieferten hier erfolgreich HTTPS-Antworten. 43 Schutz-
+prüfungen und die Oberflächentests für alle drei Anbieter bestanden. Keine ganzen
+ISOs heruntergeladen, keine USB-Medien geschrieben und keine Installation gestartet.
