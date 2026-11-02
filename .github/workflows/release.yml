@@ -22,6 +22,9 @@ jobs:
       - name: Validate ISO downloads
         shell: pwsh
         run: dotnet run --project tools/IsoDownloadTests/IsoDownloadTests.csproj -c Release
+      - name: Validate USB image recognition and boot plans
+        shell: pwsh
+        run: dotnet run --project tools/UsbPlanTests/UsbPlanTests.csproj -c Release
       - name: Publish single-file EXE
         shell: pwsh
         run: dotnet publish Brennwerk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o package

@@ -26,8 +26,14 @@ public static class Backend
         var stderr = process.StandardError.ReadToEndAsync(); string result = process.StandardOutput.ReadToEnd(); process.WaitForExit();
         if (process.ExitCode != 0) throw new IOException(stderr.GetAwaiter().GetResult()); return result;
     }
-    public static Task WriteUsb(string path, Target target, bool windows, bool verify, Action<string> log)
-        => RunEmbeddedUsb(false, new { Path = path, target.Number, target.UniqueId, target.Size, target.Serial, Windows = windows, Verify = verify }, log);
+    public static Task WriteUsb(string path, Target target, bool windows, bool verify, Action<string> log, string bootMode = "UEFI")
+        => RunEmbeddedUsb(false, new { Path = path, target.Number, target.UniqueId, target.Size, target.Serial, Windows = windows, Verify = verify, BootMode = windows ? bootMode : "Image" }, log);
+    public static async Task<IsoFacts> InspectIso(string path)
+    {
+        var lines = new List<string>();
+        await RunEmbeddedUsb(false, new { Path = path, InspectOnly = true }, lines.Add);
+        return JsonSerializer.Deserialize<IsoFacts>(string.Join("\n", lines)) ?? throw new IOException("Abbild-Erkennung lieferte kein Ergebnis.");
+    }
     public static Task TestEmbeddedUsb(Action<string> log) => RunEmbeddedUsb(true, null, log);
     static async Task RunEmbeddedUsb(bool selfTest, object? request, Action<string> log)
     {

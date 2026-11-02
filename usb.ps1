@@ -22,6 +22,18 @@ function Get-CheckedDisk($Request) {
 function Get-Volumes($DiskNumber) {
     return @(Get-Partition -DiskNumber $DiskNumber | ForEach-Object { $_.AccessPaths } | Where-Object { $_ -match '^\\\\\?\\Volume\{' } | Select-Object -Unique)
 }
+function Get-ImageFacts($Source) {
+    $install = (Test-Path -LiteralPath (Join-Path $Source 'sources\install.wim')) -or (Test-Path -LiteralPath (Join-Path $Source 'sources\install.esd')) -or (Test-Path -LiteralPath (Join-Path $Source 'sources\install.swm'))
+    $windows = (Test-Path -LiteralPath (Join-Path $Source 'sources\boot.wim')) -and $install
+    $efi = @(Get-ChildItem -LiteralPath (Join-Path $Source 'efi\boot') -Filter 'boot*.efi' -File -ErrorAction SilentlyContinue).Count -gt 0
+    $bios = (Test-Path -LiteralPath (Join-Path $Source 'bootmgr')) -and (Test-Path -LiteralPath (Join-Path $Source 'boot\bcd'))
+    return [pscustomobject]@{WindowsInstall=[bool]$windows; Efi=[bool]$efi; Bios=[bool]$bios}
+}
+function Assert-BootMode($Mode, $Facts) {
+    if ($Mode -notin @('UEFI','BIOS','Both')) { throw 'Ungueltiges Windows-Bootverfahren.' }
+    if ($Mode -in @('UEFI','Both') -and -not $Facts.Efi) { throw 'UEFI-Bootdateien fehlen in der ISO.' }
+    if ($Mode -in @('BIOS','Both') -and -not $Facts.Bios) { throw 'BIOS-Bootdateien fehlen in der ISO.' }
+}
 
 # Win32 operations are kept in one helper; locks are held through writing and verification.
 Add-Type -TypeDefinition @'
@@ -103,6 +115,20 @@ public static class BrennwerkNative {
 '@
 
 if ($SelfTest) {
+    $bootChecks = 0
+    foreach ($efi in @($false,$true)) {
+        foreach ($bios in @($false,$true)) {
+            foreach ($mode in @('UEFI','BIOS','Both','Invalid')) {
+                $facts = [pscustomobject]@{Efi=$efi; Bios=$bios}
+                $expected = ($mode -eq 'UEFI' -and $efi) -or ($mode -eq 'BIOS' -and $bios) -or ($mode -eq 'Both' -and $efi -and $bios)
+                $allowed = $true
+                try { Assert-BootMode $mode $facts } catch { $allowed=$false }
+                if ($allowed -ne $expected) { throw "Boot-Schutztest fehlgeschlagen: $mode / $efi / $bios" }
+                $bootChecks++
+            }
+        }
+    }
+    Write-Output "PASS: $bootChecks Windows boot capability/selection combinations validated before device writes."
     $request = [pscustomobject]@{Number=8; UniqueId='TEST-USB'; Size=16000000000; Serial='123'}
     $good = @{Number=8; UniqueId='TEST-USB'; Size=16000000000; SerialNumber='123'; BusType='USB'; IsBoot=$false; IsSystem=$false; IsReadOnly=$false; IsOffline=$false}
     Assert-Target ([pscustomobject]$good) $request
@@ -134,6 +160,17 @@ $mountedHere = $false; $imagePath = $null; $sourceLock = $null; $splitFolder = $
 try {
     $request = [Console]::ReadLine() | ConvertFrom-Json
     if ($null -eq $request) { throw 'Auftrag fehlt.' }
+    if ($request.InspectOnly) {
+        $imagePath = [IO.Path]::GetFullPath([string]$request.Path)
+        if ([IO.Path]::GetExtension($imagePath) -ine '.iso') { throw 'Nur ISO-Abbilder koennen schreibgeschuetzt eingebunden werden.' }
+        $sourceLock = [IO.File]::Open($imagePath, 'Open', 'Read', 'Read')
+        $image = Get-DiskImage -ImagePath $imagePath -ErrorAction Stop
+        if (-not $image.Attached) { $image = Mount-DiskImage -ImagePath $imagePath -Access ReadOnly -PassThru; $mountedHere=$true }
+        $volume = @($image | Get-Volume)
+        if ($volume.Count -ne 1 -or -not $volume[0].DriveLetter) { throw 'ISO-Dateisystem konnte nicht gelesen werden.' }
+        Get-ImageFacts "$($volume[0].DriveLetter):\" | ConvertTo-Json -Compress
+        return
+    }
     $disk = Get-CheckedDisk $request
     $imagePath = [IO.Path]::GetFullPath([string]$request.Path)
     Assert-LocalSource $imagePath $disk.Number
@@ -157,8 +194,14 @@ try {
         $volume = @($image | Get-Volume)
         if ($volume.Count -ne 1 -or -not $volume[0].DriveLetter) { throw 'ISO konnte keinem Laufwerk zugeordnet werden.' }
         $source = "$($volume[0].DriveLetter):\"
-        $efi = @(Get-ChildItem -LiteralPath (Join-Path $source 'efi\boot') -Filter 'boot*.efi' -File -ErrorAction SilentlyContinue)
-        if ($efi.Count -eq 0 -or -not (Test-Path -LiteralPath (Join-Path $source 'sources\boot.wim'))) { throw 'Keine unterstuetzte Windows-UEFI-Installations-ISO erkannt.' }
+        $facts = Get-ImageFacts $source
+        if (-not $facts.WindowsInstall) { throw 'Keine unterstuetzte Windows-Installations-ISO erkannt.' }
+        $bootMode = [string]$request.BootMode
+        Assert-BootMode $bootMode $facts
+        $bios = $bootMode -in @('BIOS','Both')
+        # Use the Windows-supplied tool, never an executable from the selected ISO.
+        $bootsect = Join-Path $env:SystemRoot 'System32\bootsect.exe'
+        if ($bios -and -not (Test-Path -LiteralPath $bootsect)) { throw 'Windows bootsect.exe fehlt; BIOS-Erstellung ist auf diesem PC nicht verfuegbar.' }
         $files = @(Get-ChildItem -LiteralPath $source -File -Recurse -Force)
         if ($files.Count -eq 0) { throw 'ISO enthaelt keine Dateien.' }
         $large = @($files | Where-Object { $_.Length -gt 4294967295 })
@@ -188,11 +231,25 @@ try {
         Write-Output "USB $($disk.Number): Partitionstabelle wird neu erstellt ..."
         if ($disk.PartitionStyle -ne 'RAW') { $disk | Clear-Disk -RemoveData -RemoveOEM -Confirm:$false }
         $disk = Get-Disk -Number $request.Number
-        if ($disk.PartitionStyle -eq 'RAW') { $disk | Initialize-Disk -PartitionStyle MBR | Out-Null }
-        $partition = New-Partition -DiskNumber $request.Number -Size $partitionSize -AssignDriveLetter
+        $style = if ($bootMode -eq 'UEFI') { 'GPT' } else { 'MBR' }
+        if ($disk.PartitionStyle -ne 'RAW') { throw 'USB-Datentraeger wurde nicht vollstaendig geleert.' }
+        $disk | Initialize-Disk -PartitionStyle $style | Out-Null
+        if ($style -eq 'GPT') {
+            $partition = New-Partition -DiskNumber $request.Number -Size $partitionSize -AssignDriveLetter -GptType '{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}'
+        } else {
+            $partition = New-Partition -DiskNumber $request.Number -Size $partitionSize -AssignDriveLetter -IsActive
+        }
         $formatted = $partition | Format-Volume -FileSystem FAT32 -NewFileSystemLabel 'BRENNWERK' -Force -Confirm:$false
         $destination = "$($formatted.DriveLetter):\"
         if (-not $formatted.DriveLetter) { throw 'USB-Ziel hat keinen Laufwerksbuchstaben erhalten.' }
+        if ($bios) {
+            $current = Get-CheckedDisk $request
+            $assigned = @(Get-Partition -DriveLetter $formatted.DriveLetter -ErrorAction Stop)
+            if ($assigned.Count -ne 1 -or $assigned[0].DiskNumber -ne $current.Number) { throw 'USB-Laufwerksbuchstabe hat sich geaendert.' }
+            Write-Output 'BIOS-Bootcode wird auf das ausgewaehlte USB-Ziel geschrieben ...'
+            & $bootsect /nt60 "$($formatted.DriveLetter):" /mbr
+            if ($LASTEXITCODE -ne 0) { throw "BIOS-Bootcode konnte nicht geschrieben werden (Code $LASTEXITCODE)." }
+        }
         Write-Output 'Windows-Dateien werden kopiert ...'
         $copied = 0
         foreach ($file in $files) {
@@ -223,7 +280,7 @@ try {
                 }
             }
         }
-        Write-Output 'Windows-UEFI-Stick fertig. Restlicher Platz auf grossen Sticks bleibt unpartitioniert.'
+        Write-Output "Windows-USB fertig: $bootMode / $style / FAT32. Restlicher Platz bleibt unpartitioniert."
     }
     exit 0
 } catch {

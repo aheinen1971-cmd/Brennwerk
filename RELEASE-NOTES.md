@@ -1,27 +1,19 @@
-# Brennwerk 0.4.2
+# Brennwerk 0.5.0
 
-- Fehler aus einem echten Debian-ISO-Download behoben: Die offizielle
-  HTTPS-Weiterleitung nach `*.ftp.acc.umu.se` wird zugelassen. Gefälschte Domains
-  bleiben gesperrt; die offizielle SHA-256-Prüfung bleibt verpflichtend.
+- Automatische Erkennung von Windows-Installationsdateien und partitionierten
+  Hybrid-/IMG-Abbildern; passender USB-Modus wird automatisch gewählt.
+- Windows: UEFI mit GPT/FAT32, BIOS/Legacy mit MBR/FAT32 oder beide mit MBR/FAT32.
+- Fehlende BIOS-/UEFI-Startdateien werden vor der Löschbestätigung abgefangen.
+  Der USB-Worker prüft diese Auswahl nochmals vor dem Löschen.
+- BIOS-Bootcode ausschließlich über die vorhandene Windows-Systemdatei
+  bootsect.exe; keine EXE aus der ausgewählten ISO wird gestartet.
+- Linux-/IMG-Layout bleibt unverändert; kein nachträglicher Umbau des Bootverfahrens.
+- Erweiterte Zusammenfassung: Quelldatei, Ziel, Seriennummer, Datenträgernummer,
+  Bootverfahren, Partitionierung und Datenprüfung. Bestätigung mit exakter Nummer.
+- Weiterhin eine einzelne EXE mit eingebautem USB-Modul, offiziellen ISO-Downloads
+  und signiertem GitHub-Updatekanal.
 
-- Windows-ISO-Download über die offizielle Microsoft-Seite direkt in der App.
-- Alternativ frischen Microsoft-ISO-Link einfügen; optionale Microsoft-SHA-256-Prüfung.
-- Aktuelle Linux-ISOs für Ubuntu Desktop LTS, Debian Netinstall und Fedora Workstation.
-- Automatischer Vergleich mit offiziellen Linux-Prüfsummen, ISO-Strukturprüfung,
-  Fortschritt, Abbruch und Schutz vorhandener Dateien.
-- Erfolgreiche Downloads werden im passenden USB-Modus ausgewählt; USB-Schreiben
-  bleibt ein separater bestätigter Schritt.
-- Die Microsoft-Seite benötigt WebView2 Runtime; Browser-/Direktlink-Alternative enthalten.
-
-- GitHub-Updatekanal mit automatischer Prüfung beim Programmstart.
-- Einstellungen zum manuellen und automatischen Installieren von Updates.
-- RSA-PSS-signierte Versionsbeschreibung, SHA-256- und Größenprüfung der EXE.
-- Austausch der Programmdatei nach dem Beenden; Sicherung der vorherigen Version.
-- Automatische Installation wartet, solange Aufgaben oder Medienfenster geöffnet sind.
-- Weiterhin eine einzelne Windows-EXE, USB-Modul und .NET-Laufzeit eingeschlossen.
-
-Die Testversion enthält Daten-/ISO-Brennen, USB-Erstellung,
-Filmexport über eine vorhandene VLC-Installation und eine Quellenübergabe an
-DVDFab. Sie entfernt keinen Software-/Spiele-Kopierschutz. Das Lesen geschützter
-Filme hängt von den externen Modulen, Schlüsseln und Freischaltungen ab.
-Echte Brenn-, USB-Schreib- und geschützte Filmtests stehen noch aus.
+Abbild-Erkennung, Boot-Auswahl, Schutzprüfungen und Oberfläche wurden ohne echte
+USB-Schreibzugriffe geprüft. Die Windows-Dateistruktur-Test-ISO prüft die Erkennung,
+enthält aber kein bootfähiges Betriebssystem. Echte USB-Schreib- und BIOS-/UEFI-
+Bootversuche stehen aus. Windows-Hardwareanforderungen werden nicht verändert.

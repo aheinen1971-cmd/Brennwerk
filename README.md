@@ -1,6 +1,37 @@
-# Brennwerk 0.4.2 – Original-ISOs und signierter Updatekanal
+# Brennwerk 0.5.0 – Abbild-Erkennung und USB-Bootverfahren
 
 Eine eigenständige Windows-App für Daten-Discs, ISO-Abbilder und bootfähige USB-Sticks.
+
+## USB-Abbilder erkennen und Auftrag prüfen
+
+In beiden USB-Modi werden ISO-/IMG-Dateien vor der Auswahl untersucht.
+ISO-Dateisysteme werden dafür schreibgeschützt eingebunden und danach wieder
+ausgehängt, soweit Brennwerk selbst sie eingebunden hat. Windows wird anhand
+der Installationsdateien erkannt; Hybrid-/IMG-Abbilder anhand der Partitionstabelle.
+Der USB-Modus wechselt entsprechend automatisch. Der Dateiname entscheidet nicht.
+Diese Erkennung ist keine Garantie für ein vollständiges, vertrauenswürdiges oder
+auf dem Ziel-PC bootfähiges Betriebssystem.
+
+Für Windows stehen drei Varianten zur Auswahl:
+
+- **UEFI:** GPT, FAT32 und EFI-Systempartition für moderne PCs.
+- **BIOS / Legacy:** MBR, aktive FAT32-Partition und Windows-Bootcode.
+- **BIOS + UEFI:** MBR und FAT32 mit beiden Startverfahren.
+
+Die passenden Startdateien müssen in der ISO vorhanden sein. Für BIOS wird nur
+die vorhandene `Windows\System32\bootsect.exe` verwendet; fehlt sie, wird vor dem
+Löschen abgebrochen. Es wird kein Programm aus der ISO ausgeführt. Hardware- und
+Installationsanforderungen des jeweiligen Windows bleiben bestehen.
+
+Bei Linux-/IMG-Abbildern werden Partitionen und Dateisysteme unverändert übernommen;
+ein Boot-Verfahren wird nicht nachträglich hinzugefügt. Vor dem Schreiben zeigt die
+Bestätigung Quelle, Zielmodell, Datenträgernummer, Seriennummer, Boot-Verfahren,
+Layout und Datenprüfung. Die Eingabe `LÖSCHEN <Datenträgernummer>` bleibt erforderlich.
+
+Geprüft sind Abbild-Erkennung, Boot-Auswahl, Ablehnung fehlender Bootdateien,
+schreibgeschütztes Einbinden einer Windows-Dateistruktur-Test-ISO sowie die echte
+Debian-ISO und der Bestätigungsdialog. Die Test-ISO enthält kein bootfähiges Windows.
+Echte USB-Schreib- und BIOS-/UEFI-Bootversuche stehen weiterhin aus.
 
 ## Windows- und Linux-ISOs direkt herunterladen
 
@@ -113,12 +144,12 @@ wird nicht benötigt oder daneben ausgepackt. Die Anwendung ist nicht signiert.
 - **ISO brennen:** Ein vorhandenes ISO-Abbild auf einen passenden leeren Rohling
   schreiben. Kapazität wird geprüft; die Disc wird finalisiert. Die Bootfähigkeit
   stammt aus dem gewählten ISO-Abbild.
-- **Windows → USB:** Windows-Installations-ISOs mit UEFI-Startdateien übertragen.
+- **Windows → USB:** Windows-Installations-ISOs mit passender BIOS-/UEFI-Auswahl übertragen.
   Der USB-Datenträger erhält eine FAT32-Partition von maximal 31 GiB. Größere
   install.wim-Dateien werden vor dem Löschen des USB-Ziels mit Windows DISM lokal
   in SWM-Dateien geteilt. Dafür wird zusätzlicher freier Speicher auf dem PC
   benötigt (mindestens WIM-Größe plus 1 GiB). Restlicher Platz auf großen Sticks
-  bleibt unpartitioniert. Legacy-BIOS wird nicht eingerichtet.
+  bleibt unpartitioniert. BIOS-Unterstützung setzt die entsprechenden Startdateien voraus.
 - **Linux / IMG → USB:** Partitionierte Hybrid-ISOs und vollständige Datenträger-
   IMGs direkt schreiben. Eine Partitionstabelle mit MBR-Signatur ist erforderlich.
   Gewöhnliche optische ISOs und einzelne Dateisystem-Abbilder werden abgewiesen.

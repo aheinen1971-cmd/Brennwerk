@@ -7,6 +7,9 @@ namespace Brennwerk;
 public partial class MainWindow : Window
 {
     bool busy;
+    bool selectingSource;
+    UsbImage? selectedImage;
+    string SelectedBoot => (BootChoice.SelectedItem as ComboBoxItem)?.Tag as string ?? "UEFI";
     public bool InstallingUpdate {get;private set;}
     PreparedUpdate? pendingUpdate;
     bool checkingUpdates;
@@ -39,14 +42,13 @@ public partial class MainWindow : Window
         finally{checkingUpdates=false;}
     }
     bool IsDisc => DiscMode.IsChecked == true || DataMode.IsChecked == true;
-    void GetIso(object sender,RoutedEventArgs e)
+    async void GetIso(object sender,RoutedEventArgs e)
     {
         if(busy)return;
         var window=new IsoDownloadWindow(this,WindowsMode.IsChecked==true);
         if(window.ShowDialog()==true&&window.Result is {} result)
         {
-            if(result.Provider=="Windows")WindowsMode.IsChecked=true;else RawMode.IsChecked=true;
-            ImagePath.Text=result.Path;ImageInfo.Text=$"{new FileInfo(result.Path).Length/1073741824.0:F2} GiB · {Path.GetFileName(result.Path)}";
+            await SelectImage(result.Path);
             AddLog(result.PublisherHashVerified?"Original-ISO heruntergeladen und mit der Anbieter-Prüfsumme bestätigt.":"Original-ISO von Microsoft geladen; keine Anbieter-Vergleichsprüfsumme angegeben.");
         }
     }
@@ -61,20 +63,61 @@ public partial class MainWindow : Window
     void AddLog(string text) => Dispatcher.Invoke(() => { Log.AppendText($"{DateTime.Now:HH:mm:ss}  {text}{Environment.NewLine}"); Log.ScrollToEnd(); });
     async void ModeChanged(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded) return;
+        if (!IsLoaded || selectingSource) return;
+        ConfigureMode();
+        selectedImage = null;
+        ImagePath.Clear(); ImageInfo.Text = "Noch keine Quelle ausgewählt.";
+        UpdateBootInfo();
+        await Refresh();
+    }
+    void ConfigureMode()
+    {
         bool data = DataMode.IsChecked == true, win = WindowsMode.IsChecked == true;
         Heading.Text = data ? "Daten auf Disc brennen" : IsDisc ? "ISO auf Disc brennen" : win ? "Windows-USB erstellen" : "Linux / IMG auf USB schreiben";
-        ModeHint.Text = data ? "Einen Ordner samt Unterordnern brennen oder als Daten-ISO speichern." : IsDisc ? "ISO auf CD, DVD oder Blu-ray brennen; die Bootfähigkeit bleibt erhalten." : win ? "Windows-Installations-ISO für UEFI-PCs. Große install.wim wird automatisch geteilt." : "Hybrid-ISO oder bootfähiges IMG unverändert auf USB schreiben. Keine Windows-ISO verwenden.";
+        ModeHint.Text = data ? "Einen Ordner samt Unterordnern brennen oder als Daten-ISO speichern." : IsDisc ? "ISO auf CD, DVD oder Blu-ray brennen; die Bootfähigkeit bleibt erhalten." : win ? "Windows-Installations-ISO automatisch erkennen und das Boot-Verfahren passend zum PC wählen." : "Hybrid-ISO oder bootfähiges IMG unverändert auf USB schreiben. Der Abbildtyp wird automatisch geprüft.";
         Notice.Text = IsDisc ? "Nur leere Rohlinge. Die Disc wird abgeschlossen. Eine Lesekontrolle der Disc ist in dieser Version noch nicht enthalten." : "Alle Partitionen und Dateien des USB-Ziels werden gelöscht. Vor dem Start Modell, Größe und Datenträgernummer prüfen.";
         Verify.Visibility = IsDisc ? Visibility.Collapsed : Visibility.Visible; BrowseButton.Content = data ? "Ordner wählen …" : "Datei wählen …";
         SaveIsoButton.Visibility = data ? Visibility.Visible : Visibility.Collapsed;
         StartButton.Content = IsDisc ? "Disc brennen" : "USB-Stick erstellen";
         GetIsoButton.Visibility=IsDisc?Visibility.Collapsed:Visibility.Visible;GetIsoButton.Content=win?"Windows-ISO von Microsoft holen …":"Aktuelle Linux-ISO holen …";
         TargetHint.Text = IsDisc ? "Leeren Rohling einlegen und Brenner auswählen. Kapazität wird vor dem Schreiben geprüft." : "Nur USB-Datenträger; System-, Start- und schreibgeschützte Laufwerke sind gesperrt.";
-        ImagePath.Clear(); ImageInfo.Text = "Noch keine Quelle ausgewählt.";
-        await Refresh();
+        BootOptions.Visibility = win ? Visibility.Visible : Visibility.Collapsed;
+        BootInfo.Visibility = IsDisc ? Visibility.Collapsed : Visibility.Visible;
     }
-    void Browse(object sender, RoutedEventArgs e)
+    void BootChanged(object sender, SelectionChangedEventArgs e) { if(IsLoaded)UpdateBootInfo(); }
+    void UpdateBootInfo()
+    {
+        if(IsDisc) return;
+        try { BootInfo.Text = selectedImage is null ? "Das Abbild wird nach der Auswahl schreibgeschützt untersucht. Vor dem Schreiben erscheint eine Zusammenfassung." : UsbPlan.Create(selectedImage, selectedImage.Windows ? SelectedBoot : "Image").Description; }
+        catch(Exception ex) { BootInfo.Text = ex.Message; }
+    }
+    public async Task SelectImage(string path)
+    {
+        if(busy)return;
+        if(IsDisc) { ImagePath.Text=path;ImageInfo.Text=$"{new FileInfo(path).Length/1073741824.0:F2} GiB · {Path.GetFileName(path)}";return; }
+        SetBusy(true);
+        selectedImage=null; ImagePath.Clear();ImageInfo.Text="Abbild wird schreibgeschützt untersucht …";
+        try
+        {
+            var image=await UsbImages.Inspect(path);
+            if(!image.Windows&&!image.Hybrid)throw new IOException(image.Description);
+            selectingSource=true;
+            try
+            {
+                if(image.Windows)WindowsMode.IsChecked=true;else RawMode.IsChecked=true;
+                ConfigureMode();
+                BootChoice.SelectedIndex=image.Efi?0:1;
+            }
+            finally { selectingSource=false; }
+            selectedImage=image;ImagePath.Text=image.Path;
+            ImageInfo.Text=$"{image.Bytes/1073741824.0:F2} GiB · {image.Description}";
+            Targets.SelectedIndex=-1;
+            UpdateBootInfo();AddLog("Abbild erkannt: "+image.Description);
+        }
+        catch(Exception ex) { ImageInfo.Text="Abbild nicht ausgewählt: "+ex.Message;AddLog(ex.Message); }
+        finally { SetBusy(false);Progress.IsIndeterminate=false;Status.Text="Bitte Ziel auswählen";UpdateBootInfo(); }
+    }
+    async void Browse(object sender, RoutedEventArgs e)
     {
         if (DataMode.IsChecked == true)
         {
@@ -83,8 +126,8 @@ public partial class MainWindow : Window
         }
         else
         {
-            var dialog = new OpenFileDialog { Filter = RawMode.IsChecked == true ? "Abbilder (*.iso;*.img)|*.iso;*.img" : "ISO-Abbilder (*.iso)|*.iso", CheckFileExists = true };
-            if (dialog.ShowDialog() == true) { ImagePath.Text = dialog.FileName; ImageInfo.Text = $"{new FileInfo(dialog.FileName).Length / 1073741824.0:F2} GiB · {Path.GetFileName(dialog.FileName)}"; }
+            var dialog = new OpenFileDialog { Filter = !IsDisc ? "Abbilder (*.iso;*.img)|*.iso;*.img" : "ISO-Abbilder (*.iso)|*.iso", CheckFileExists = true };
+            if (dialog.ShowDialog() == true) await SelectImage(dialog.FileName);
         }
     }
     async void RefreshClick(object sender, RoutedEventArgs e) => await Refresh();
@@ -131,14 +174,28 @@ public partial class MainWindow : Window
         {
             if (MessageBox.Show(this, $"Quelle: {path}\nBrenner: {target.Label}\n\nDisc jetzt beschreiben und abschließen?", "Brennen bestätigen", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         }
-        else if (!ConfirmUsb(target, path)) return;
+        UsbPlan? plan=null;
+        if(!disc)
+        {
+            SetBusy(true);
+            try
+            {
+                var image=await UsbImages.Inspect(path);
+                if(image.Windows!=win)throw new IOException("Der Abbildtyp passt nicht mehr zum gewählten Modus. Bitte die Quelle erneut auswählen.");
+                plan=UsbPlan.Create(image,win?SelectedBoot:"Image");
+                if(image.Bytes>target.Size)throw new IOException("Das Abbild ist größer als der ausgewählte USB-Datenträger.");
+            }
+            catch(Exception ex) { Status.Text="USB-Auftrag nicht gestartet";MessageBox.Show(this,ex.Message,"USB-Auftrag nicht gestartet");return; }
+            finally { SetBusy(false);Progress.IsIndeterminate=false; }
+            if(!ConfirmUsb(target,plan,verify))return;
+        }
         SetBusy(true); string? temp = null;
         try
         {
             AddLog($"Start: {path} → {target.Label}");
             if (data) { temp = Path.Combine(Path.GetTempPath(), "Brennwerk-" + Guid.NewGuid() + ".iso"); await Optical.CreateIso(path, temp, AddLog); path = temp; }
             if (disc) await Optical.Burn(path, target.Id, AddLog);
-            else await Backend.WriteUsb(path, target, win, verify, AddLog);
+            else await Backend.WriteUsb(path, target, win, verify, AddLog, plan!.BootMode);
             Progress.IsIndeterminate = false; Progress.Value = 100; Status.Text = "Abgeschlossen";
             AddLog(disc ? "Disc geschrieben und abgeschlossen. Keine Lesekontrolle durchgeführt." : verify ? "USB-Stick geschrieben und Datenprüfung erfolgreich." : "USB-Stick geschrieben; Datenprüfung abgewählt.");
             MessageBox.Show(this, "Der Vorgang wurde erfolgreich abgeschlossen.", "Brennwerk");
@@ -146,16 +203,16 @@ public partial class MainWindow : Window
         catch (Exception ex) { Status.Text = "Fehlgeschlagen"; AddLog("FEHLER: " + ex.Message); MessageBox.Show(this, ex.Message + "\n\nNach einem Schreibfehler kann das Zielmedium unvollständig sein.", "Vorgang fehlgeschlagen", MessageBoxButton.OK, MessageBoxImage.Error); }
         finally { if (temp != null) { try { File.Delete(temp); } catch { } } SetBusy(false); }
     }
-    bool ConfirmUsb(Target target, string path)
+    bool ConfirmUsb(Target target, UsbPlan plan, bool verify)
     {
-        var dialog = new Window { Owner = this, Title = "USB-Ziel vollständig löschen", Width = 580, Height = 390, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = System.Windows.Media.Brushes.White };
+        var dialog = new Window { Owner = this, Title = "USB-Auftrag prüfen und Ziel löschen", Width = 650, SizeToContent=SizeToContent.Height, MaxHeight=700, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = System.Windows.Media.Brushes.White };
         var panel = new StackPanel { Margin = new Thickness(24) };
-        panel.Children.Add(new TextBlock { Text = $"ALLE DATEN AUF DIESEM ZIEL WERDEN GELÖSCHT:\n\n{target.Label}\nSeriennummer: {target.Serial}\n\nAbbild: {Path.GetFileName(path)}\n\nZum Bestätigen eingeben: LÖSCHEN {target.Number}", TextWrapping = TextWrapping.Wrap, Foreground = System.Windows.Media.Brushes.Black });
+        panel.Children.Add(new TextBlock { Text = plan.Summary(target,verify)+$"\n\nZum Bestätigen eingeben: LÖSCHEN {target.Number}", TextWrapping = TextWrapping.Wrap, Foreground = System.Windows.Media.Brushes.Black });
         var input = new TextBox { Margin = new Thickness(0, 16, 0, 16) }; panel.Children.Add(input);
         var button = new Button { Content = "Löschen und schreiben", IsEnabled = false };
         input.TextChanged += (_, _) => button.IsEnabled = input.Text == $"LÖSCHEN {target.Number}";
         button.Click += (_, _) => dialog.DialogResult = true; panel.Children.Add(button);
-        dialog.Content = panel; return dialog.ShowDialog() == true;
+        dialog.Content = new ScrollViewer {Content=panel,VerticalScrollBarVisibility=ScrollBarVisibility.Auto}; return dialog.ShowDialog() == true;
     }
     void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {

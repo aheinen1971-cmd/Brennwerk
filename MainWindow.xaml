@@ -27,7 +27,16 @@
     <TextBlock Text="02   ZIEL AUSWÄHLEN" Foreground="#6EE7C2" FontWeight="Bold" Margin="0,0,0,9"/>
     <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><ComboBox x:Name="Targets" DisplayMemberPath="Label"/><Button Grid.Column="1" Content="Aktualisieren" Click="RefreshClick" Margin="12,0,0,0"/></Grid>
     <TextBlock x:Name="TargetHint" Foreground="#9DAEC5" Margin="0,8,0,16" Text="Leeren Rohling einlegen und den gewünschten Brenner auswählen."/>
-    <CheckBox x:Name="Verify" IsChecked="True" Visibility="Collapsed" Foreground="#C8D5E6" Content="USB-Daten nach dem Schreiben prüfen" Margin="0,0,0,18"/>
+    <StackPanel x:Name="BootOptions" Visibility="Collapsed" Margin="0,0,0,12">
+     <TextBlock Text="03   BOOT-VERFAHREN" Foreground="#6EE7C2" FontWeight="Bold" Margin="0,0,0,8"/>
+     <ComboBox x:Name="BootChoice" SelectedIndex="0" SelectionChanged="BootChanged">
+      <ComboBoxItem Content="UEFI – moderne PCs (GPT / FAT32)" Tag="UEFI"/>
+      <ComboBoxItem Content="BIOS / Legacy – ältere PCs (MBR / FAT32)" Tag="BIOS"/>
+      <ComboBoxItem Content="BIOS + UEFI – beide (MBR / FAT32)" Tag="Both"/>
+     </ComboBox>
+    </StackPanel>
+    <TextBlock x:Name="BootInfo" Visibility="Collapsed" Foreground="#9DAEC5" Margin="0,0,0,12"/>
+    <CheckBox x:Name="Verify" IsChecked="True" Visibility="Collapsed" Foreground="#C8D5E6" Content="USB-Daten nach dem Schreiben prüfen" Margin="0,0,0,12"/>
    </StackPanel>
    <Border Grid.Row="2" Background="#202D3E" Padding="14" CornerRadius="8" Margin="0,0,0,18"><TextBlock x:Name="Notice" Text="Die Disc wird nach dem Schreiben abgeschlossen. Bitte das Medium während des Schreibens nicht entfernen." Foreground="#C8D5E6"/></Border>
    <StackPanel Grid.Row="3" Orientation="Horizontal"><Button x:Name="StartButton" Content="Disc brennen" Background="#147A64" Click="Start" FontWeight="SemiBold"/><Button x:Name="SaveIsoButton" Content="Als ISO speichern" Click="SaveIso" Visibility="Collapsed"/><TextBlock x:Name="Status" Text="Bereit" VerticalAlignment="Center" Foreground="#9DAEC5"/></StackPanel>
