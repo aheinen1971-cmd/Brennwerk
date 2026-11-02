@@ -1,22 +1,25 @@
-# Brennwerk 0.6.0
+# Brennwerk 0.7.0
 
-- Geführter Windows-11-Download: x64/Arm64, aktuelle Microsoft-Edition, Sprache,
-  frischer offizieller ISO-Link und automatisch zugeordnete Microsoft-SHA-256.
-- Microsoft-Seite im Programm bleibt als Alternative erhalten, ebenso Browser
-  und Direktlink. Alte Assistentenlinks und Prüfsummen werden beim Umschalten verworfen.
-- Linux-Assistent mit 27 Katalogeinträgen und automatischer Prüfung bei der Auswahl.
-- Direkte Versions-, ISO- und Prüfsummenermittlung für Ubuntu LTS, Debian Netinstall,
-  Fedora Workstation und Mint Cinnamon, MATE sowie Xfce.
-- Weitere Distributionen mit automatischer Erreichbarkeitsprüfung ihrer offiziellen
-  Seite. Deren ISO-Auswahl und Prüfanleitung erfolgen noch auf der Anbieterseite.
-- Keine privaten Microsoft-APIs, keine fremden Downloadskripte, keine gespeicherten
-  zeitlich begrenzten Downloadlinks im Programm.
+- Fest hinterlegte, schreibgeschützte Anbieter-Liste; HTTPS, exakte Anbieterhosts
+  und bekannte www-Varianten werden vor Seitenaufrufen geprüft.
+- Fremde Weiterleitungen, Lookalike-Domains, URL-Anmeldedaten, unzulässige Ports
+  und HTTP-Rückstufungen werden vor dem Zugriff blockiert.
+- Microsoft-Assistent nur auf den freigegebenen Windows-11-Downloadseiten;
+  ISO-Transfers weiterhin über die gesondert freigegebenen Downloadserver.
+- WebView2-Zertifikatsfehler werden ausdrücklich abgebrochen. Keine TLS-Ausnahmen.
+- Neue Übersicht „Webseiten prüfen“ mit Status je Quelle, lesbaren Fehlerdetails,
+  letzter Prüfung und nächstem Prüftermin.
+- Automatische Prüfung alle sechs Stunden bei geöffnetem Programm. Überfällige
+  Prüfungen werden beim Start nachgeholt; keine Hintergrundaufgabe bei geschlossenem Programm.
+- Automatische Fehlerbehandlung: einmaliger Wiederholungsversuch an der bekannten
+  Originaladresse; beschädigte oder manipulierte gespeicherte Ergebnisse werden verworfen.
+- Bei blockierten/nicht erreichbaren Quellen wird zusätzlich nach einem signierten
+  Programm-Update gesucht, sofern automatische Updateprüfung aktiviert ist.
+  Installation bleibt von den bestehenden Updateeinstellungen und Leerlauf abhängig.
 
-Live geprüft: Windows x64 und Arm64 jeweils Deutsch, alle sechs direkten Linux-
-Katalogabfragen, Wechsel zur Microsoft-Alternative und zurück, Verwerfen alter
-Auswahlen sowie ISO-Antworten von Microsoft und Mint mit jeweils 64 KiB Testdaten.
-Keine erneuten vollständigen ISO-Downloads, keine USB-Schreib- oder Bootversuche.
-Die drei zusätzlich geprüften Seiten MX, Lubuntu und Raspberry Pi OS lehnten
-hier automatische HTTP-Abfragen ab; ihre offiziellen Seiten bleiben aufrufbar.
-
-Bei späteren wiederholten Live-Tests verweigerte Microsoft neue Links mit Code 715-123130. Der Assistent bricht dann mit der Anbieterantwort ab und lässt die Microsoft-Alternative verfügbar; ein erfolgreicher Linkabruf kann nicht erzwungen werden.
+Live-Ergebnis: 28 Katalogeinträge geprüft, 25 bestätigt und 3 Anbieter mit HTTP 403.
+Die Anbieterablehnungen werden nicht als repariert ausgegeben. Andere Domains,
+Zertifikate oder beliebige neue Seiten werden niemals automatisch freigegeben.
+Die Prüfung bestätigt Adresse, HTTPS und HTTP-Weiterleitungen, nicht sämtliche
+Inhalte oder die Sicherheit eines Betriebssystems. Weitere Navigation in einem
+externen Browser wird von dessen eigenen Schutzfunktionen verwaltet.

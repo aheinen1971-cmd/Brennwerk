@@ -54,8 +54,10 @@ public partial class IsoDownloadWindow : Window
             await browser.EnsureCoreWebView2Async(environment);
             windowsWizard=new MicrosoftWizard(s=>browser.CoreWebView2.ExecuteScriptAsync(s),()=>browser.CoreWebView2.Source);
             browser.CoreWebView2.Settings.AreDevToolsEnabled=false;browser.CoreWebView2.Settings.IsStatusBarEnabled=false;
-            browser.CoreWebView2.NavigationStarting+=(_,e)=>{if(!Uri.TryCreate(e.Uri,UriKind.Absolute,out var uri)||!IsoDownloads.MicrosoftPageUri(uri)){e.Cancel=true;Status.Text="Es werden hier nur offizielle Microsoft-Seiten geöffnet.";}};
-            browser.CoreWebView2.NewWindowRequested+=(_,e)=>{e.Handled=true;if(Uri.TryCreate(e.Uri,UriKind.Absolute,out var uri)&&IsoDownloads.MicrosoftPageUri(uri))browser.CoreWebView2.Navigate(uri.AbsoluteUri);};
+            bool Allowed(Uri uri)=>WebsiteSafety.MicrosoftPage(uri)||(IsoDownloads.TrustedUri("Windows",uri)&&uri.AbsolutePath.EndsWith(".iso",StringComparison.OrdinalIgnoreCase));
+            browser.CoreWebView2.NavigationStarting+=(_,e)=>{if(!Uri.TryCreate(e.Uri,UriKind.Absolute,out var uri)||!Allowed(uri)){e.Cancel=true;available=null;UpdateDownloadButton();Status.Text="Nicht freigegebene Webseite gesperrt.";}};
+            browser.CoreWebView2.NewWindowRequested+=(_,e)=>{e.Handled=true;if(Uri.TryCreate(e.Uri,UriKind.Absolute,out var uri)&&Allowed(uri))browser.CoreWebView2.Navigate(uri.AbsoluteUri);else Status.Text="Nicht freigegebenes Fenster gesperrt.";};
+            browser.CoreWebView2.ServerCertificateErrorDetected+=(_,e)=>{e.Action=CoreWebView2ServerCertificateErrorAction.Cancel;available=null;UpdateDownloadButton();Status.Text="HTTPS-Zertifikat nicht bestätigt; Zugriff gesperrt.";};
             browser.CoreWebView2.DownloadStarting+=(_,e)=>
             {
                 string url=e.DownloadOperation.Uri;e.Cancel=true;e.Handled=true;
@@ -153,22 +155,13 @@ public partial class IsoDownloadWindow : Window
     });
     public static async Task CheckOfficialPage(LinuxDistribution distro,CancellationToken token)
     {
-        using var client=IsoDownloads.CreateClient();using var timeout=CancellationTokenSource.CreateLinkedTokenSource(token);timeout.CancelAfter(TimeSpan.FromSeconds(25));var uri=new Uri(distro.Page);
-        for(int i=0;i<5;i++)
-        {
-            if(uri.Scheme!="https"||!uri.IsDefaultPort||!string.IsNullOrEmpty(uri.UserInfo))throw new IOException("Die Downloadseite verwendet keine unterstützte HTTPS-Adresse.");
-            string expected=new Uri(distro.Page).Host.Replace("www.","");
-            if(uri.Host.Replace("www.","")!=expected)throw new IOException("Die Downloadseite leitet auf einen anderen Anbieter weiter. Bitte die offizielle Seite selbst öffnen.");
-            using var response=await client.GetAsync(uri,HttpCompletionOption.ResponseHeadersRead,timeout.Token);
-            if((int)response.StatusCode is 301 or 302 or 303 or 307 or 308){uri=new Uri(uri,response.Headers.Location??throw new IOException("Leere Weiterleitung."));continue;}
-            response.EnsureSuccessStatusCode();return;
-        }
-        throw new IOException("Zu viele Weiterleitungen auf der Downloadseite.");
+        var result=await WebsiteSafety.Check(distro.Id,distro.Name,distro.Page,token);
+        if(result.State!="Verified")throw new IOException(result.Message);
     }
-    void OpenDistroPage(object sender,RoutedEventArgs e)
+    async void OpenDistroPage(object sender,RoutedEventArgs e)
     {
         if(SelectedDistro is not {} distro)return;
-        try{Process.Start(new ProcessStartInfo(distro.Page){UseShellExecute=true})?.Dispose();}catch(Exception ex){AddLog(ex.Message);}
+        await OpenCheckedPage(distro.Id,distro.Name,distro.Page);
     }
     void AddLog(string text)=>Dispatcher.Invoke(()=>{Log.AppendText(text+Environment.NewLine);Log.ScrollToEnd();});
     void SetWorking(bool value)
@@ -232,10 +225,23 @@ public partial class IsoDownloadWindow : Window
         catch(Exception ex){Status.Text="ISO nicht übernommen";AddLog(ex.Message);}
         finally{cancellation.Dispose();cancellation=null;SetWorking(false);}
     }
-    void OpenMicrosoft(object sender,RoutedEventArgs e)
+    async void OpenMicrosoft(object sender,RoutedEventArgs e)
     {
-        try{Process.Start(new ProcessStartInfo(MicrosoftPage){UseShellExecute=true})?.Dispose();}
-        catch(Exception ex){Status.Text="Browser konnte nicht geöffnet werden";AddLog(ex.Message);}
+        await OpenCheckedPage("Windows","Microsoft",MicrosoftPage);
+    }
+    async Task OpenCheckedPage(string provider,string name,string address)
+    {
+        if(working)return;cancellation=new CancellationTokenSource();SetWorking(true);Status.Text="Adresse und Weiterleitungen vor dem Öffnen prüfen …";
+        try
+        {
+            var result=await WebsiteSafety.Check(provider,name,address,cancellation.Token);
+            if(!result.CanOpen)throw new IOException(result.Message);
+            Process.Start(new ProcessStartInfo(result.FinalAddress!){UseShellExecute=true})?.Dispose();
+            Status.Text="Geprüfte Anbieteradresse geöffnet. Weitere Navigation wird vom externen Browser verwaltet.";
+        }
+        catch(OperationCanceledException){Status.Text="Seitenprüfung abgebrochen";}
+        catch(Exception ex){Status.Text="Webseite nicht geöffnet";AddLog(ex.Message);}
+        finally{cancellation.Dispose();cancellation=null;SetWorking(false);}
     }
     void Cancel(object sender,RoutedEventArgs e){cancellation?.Cancel();Status.Text="Wird abgebrochen …";}
     void OnClosing(object? sender,System.ComponentModel.CancelEventArgs e){if(working){e.Cancel=true;cancellation?.Cancel();Status.Text="Download wird abgebrochen …";}}

@@ -14,6 +14,26 @@ public partial class MainWindow : Window
     PreparedUpdate? pendingUpdate;
     bool checkingUpdates;
     readonly System.Windows.Threading.DispatcherTimer updateTimer=new(){Interval=TimeSpan.FromSeconds(30)};
+    readonly System.Windows.Threading.DispatcherTimer websiteTimer=new(){Interval=TimeSpan.FromMinutes(1)};
+    bool checkingWebsites;
+    void OpenWebsites(object sender,RoutedEventArgs e){if(!busy)new WebsiteWindow(this).ShowDialog();}
+    async Task CheckWebsites()
+    {
+        if(checkingWebsites||busy||InstallingUpdate)return;checkingWebsites=true;
+        try
+        {
+            var previous=WebsiteSafety.Load(WebsiteMonitor.ReportPath);
+            if(previous!=null){int warnings=previous.Results.Count(r=>r.State!="Verified");WebsiteButton.Content=warnings==0?"Webseiten: geprüft":$"Webseiten: {warnings} Hinweise";}
+            if(!WebsiteMonitor.IsDue())return;
+            var report=await WebsiteMonitor.Refresh();int problems=report.Results.Count(r=>r.State!="Verified");
+            WebsiteButton.Content=problems==0?"Webseiten: geprüft":$"Webseiten: {problems} Hinweise";
+            AddLog($"Webseitenprüfung abgeschlossen: {report.Results.Count(r=>r.State=="Verified")} Adressen bestätigt, {problems} Hinweise. Nächste Prüfung in 6 Stunden.");
+            if(report.Results.Any(r=>r.State is "Blocked" or "Unavailable"))await CheckUpdatesOnStartup(true);
+        }
+        catch(OperationCanceledException){}
+        catch(Exception ex){AddLog("Webseitenprüfung: "+ex.Message);}
+        finally{checkingWebsites=false;}
+    }
     void OpenUpdates(object sender,RoutedEventArgs e){if(!busy)new UpdateWindow(this).ShowDialog();}
     bool UpdateIdle => !busy && !InstallingUpdate && OwnedWindows.Count==0 && string.IsNullOrWhiteSpace(ImagePath.Text);
     bool CanAutoInstall()
@@ -25,10 +45,10 @@ public partial class MainWindow : Window
         if(busy||OwnedWindows.Cast<Window>().Any(w=>w is not UpdateWindow))throw new IOException("Bitte zuerst andere Aufgaben und Medienfenster beenden.");
         Updates.BeginInstall(prepared);InstallingUpdate=true;updateTimer.Stop();Application.Current.Shutdown();
     }
-    async Task CheckUpdatesOnStartup()
+    async Task CheckUpdatesOnStartup(bool force=false)
     {
         var settings=Updates.LoadSettings();
-        if(checkingUpdates||!settings.AutoCheck||DateTime.UtcNow-settings.LastCheckUtc<TimeSpan.FromHours(12))return;
+        if(checkingUpdates||!settings.AutoCheck||!force&&DateTime.UtcNow-settings.LastCheckUtc<TimeSpan.FromHours(12))return;
         checkingUpdates=true;
         try
         {
@@ -57,8 +77,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();Title="Brennwerk · Version "+Updates.VersionText;AppVersion.Text="Version "+Updates.VersionText+"\n\nLokal brennen.\nUpdates über GitHub.";
         updateTimer.Tick+=(_,_)=>{try{if(pendingUpdate!=null&&CanAutoInstall())InstallPreparedUpdate(pendingUpdate);}catch(Exception ex){updateTimer.Stop();AddLog("Update: "+ex.Message);}};
-        Loaded += async (_, _) => {await Refresh();if(!Environment.GetCommandLineArgs().Contains("--preview"))await CheckUpdatesOnStartup();};
-        Closed+=(_,_)=>updateTimer.Stop();
+        websiteTimer.Tick+=async(_,_)=>await CheckWebsites();
+        Loaded += async (_, _) => {await Refresh();if(!Environment.GetCommandLineArgs().Contains("--preview")){websiteTimer.Start();_ = CheckWebsites();await CheckUpdatesOnStartup();}};
+        Closed+=(_,_)=>{updateTimer.Stop();websiteTimer.Stop();WebsiteMonitor.Cancel();};
     }
     void AddLog(string text) => Dispatcher.Invoke(() => { Log.AppendText($"{DateTime.Now:HH:mm:ss}  {text}{Environment.NewLine}"); Log.ScrollToEnd(); });
     async void ModeChanged(object sender, RoutedEventArgs e)

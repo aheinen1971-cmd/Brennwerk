@@ -20,7 +20,7 @@ Check(IsoDownloads.UbuntuVersion("<a href='24.04/'>LTS</a><a href='26.04/'>LTS</
 Check(IsoDownloads.IsoName("<a href='ubuntu-26.04-desktop-amd64.iso'></a><a href='ubuntu-26.04.1-desktop-amd64.iso'></a><a href='ubuntu-26.04.1-live-server-amd64.iso'></a>","Ubuntu")=="ubuntu-26.04.1-desktop-amd64.iso","latest Ubuntu desktop point release selected");
 Check(IsoDownloads.IsoName("<a href='debian-13.7.0-amd64-netinst.iso'></a><a href='debian-edu-13.7.0-amd64-netinst.iso'></a>","Debian")=="debian-13.7.0-amd64-netinst.iso","standard Debian netinstall selected instead of alternate editions");
 byte[] iso=new byte[65536];Encoding.ASCII.GetBytes("CD001").CopyTo(iso,32769);string hash=Convert.ToHexString(SHA256.HashData(iso));
-Check(LinuxCatalog.Items.Length==27&&LinuxCatalog.Items.Select(x=>x.Id).Distinct().Count()==27&&LinuxCatalog.Items.All(x=>new Uri(x.Page).Scheme=="https"),"broad Linux catalogue has unique entries and HTTPS official pages");
+Check(LinuxCatalog.Items.Count==27&&LinuxCatalog.Items.Select(x=>x.Id).Distinct().Count()==27&&LinuxCatalog.Items.All(x=>new Uri(x.Page).Scheme=="https"),"broad Linux catalogue has unique entries and HTTPS official pages");
 Check(IsoDownloads.MintEdition("Cinnamon Edition <a href='edition.php?id=326'>Download</a>","Cinnamon")=="https://linuxmint.com/edition.php?id=326","Mint edition discovered from publisher page without fixed release ID");
 var mint=IsoDownloads.MintSource("https://pub.linuxmint.io/stable/22.3/linuxmint-22.3-cinnamon-64bit.iso","Mint","Cinnamon");
 Check(mint.Version=="22.3"&&mint.Url.Host=="pub.linuxmint.io","Mint source comes from publisher-linked stable server");

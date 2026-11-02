@@ -1,6 +1,40 @@
-# Brennwerk 0.6.0 – Windows- und Linux-Download-Assistenten
+# Brennwerk 0.7.0 – Quellen absichern und alle sechs Stunden prüfen
 
 Eine eigenständige Windows-App für Daten-Discs, ISO-Abbilder und bootfähige USB-Sticks.
+
+## Anbieteradressen und Sechs-Stunden-Prüfung
+
+**Webseiten prüfen** zeigt für jeden Anbieter die geprüfte Adresse, letzte Prüfung,
+Status und nächste Prüfung. Ein markierter Eintrag zeigt die vollständige Meldung.
+Die bekannte Anbieter-Liste ist schreibgeschützt. Fremde Hosts, Verwechslungen mit
+ähnlichen Domains, HTTP, Anmeldedaten in URLs, Sonderports und fremde Weiterleitungen
+werden vor der Anfrage abgewiesen. Microsofts Formular wird nur auf den beiden
+freigegebenen Windows-11-Seiten bedient; ISO-Adressen haben ihre eigene Freigabeliste.
+WebView2 bricht Zertifikatsfehler ausdrücklich ab. Der HTTP-Client verwendet die
+Zertifikatsprüfung des Betriebssystems ohne Ausnahmen.
+
+Die automatische Prüfung läuft alle sechs Stunden, solange Brennwerk geöffnet ist.
+Der Termin wird anhand eines lokal gespeicherten UTC-Prüfberichts berechnet; eine
+überfällige Prüfung wird beim Start nachgeholt. Während Brenn-/USB-Aufträgen wird
+keine neue periodische Prüfung gestartet. Es wird keine Windows-Hintergrundaufgabe
+installiert. Bei geschlossenem Programm laufen keine Prüfungen.
+
+Vor einem externen Seitenaufruf werden Adresse, HTTPS und HTTP-Weiterleitungen
+zusätzlich live geprüft. HTTP 403/429 bedeutet eine Anbieterablehnung bei bestätigter
+Adresse, nicht ein gültiges ISO. In diesem Fall kann die bekannte Adresse im normalen
+Browser geöffnet werden. Bei fehlender HTTPS-Bestätigung, fremden Weiterleitungen,
+fehlender Seite oder einem anderen ungeklärten Fehler wird sie nicht geöffnet.
+Weitere Navigation und dynamische Weiterleitungen im externen Browser unterliegen
+anschließend dessen Schutzfunktionen. Domain-/TLS-Prüfung garantiert weder den
+Inhalt einer Anbieter-Webseite noch ein sicheres oder bootfähiges Betriebssystem.
+
+Bei Verbindungs-/Serverfehlern wird einmal an der bekannten Originaladresse erneut
+geprüft. Beschädigte, unvollständige, in die Zukunft datierte oder fremde Adressen
+enthaltende Prüfberichte werden verworfen und neu erstellt. Fremde Domains werden
+nicht aus einer fehlerhaften Seite übernommen; Zertifikatswarnungen werden nicht
+übergangen. Bei blockierten/nicht erreichbaren Quellen sucht das Hauptfenster
+zusätzlich nach einem signierten Brennwerk-Update, sofern AutoCheck aktiviert ist.
+AutoInstall und die vorhandenen Leerlaufbedingungen bleiben maßgeblich.
 
 ## Geführte Downloads und automatische Quellenprüfung
 

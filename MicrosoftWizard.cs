@@ -11,7 +11,7 @@ public sealed class MicrosoftWizard(Func<string,Task<string>> execute,Func<strin
     public static string Page(bool arm64)=>IsoDownloads.MicrosoftPage+(arm64?"arm64":"");
     async Task<T?> Evaluate<T>(string script)
     {
-        if(!Uri.TryCreate(currentUrl(),UriKind.Absolute,out var uri)||uri.Host!="www.microsoft.com"||uri.Scheme!="https")throw new IOException("Der Assistent wartet auf die offizielle Microsoft-Seite.");
+        if(!Uri.TryCreate(currentUrl(),UriKind.Absolute,out var uri)||!WebsiteSafety.MicrosoftPage(uri))throw new IOException("Der Assistent wartet auf die freigegebene Microsoft-Downloadseite.");
         return JsonSerializer.Deserialize<T>(await execute(script));
     }
     public async Task<MicrosoftOption[]> Options(string id,CancellationToken token)

@@ -14,19 +14,19 @@ public static class IsoDownloads
     public const long MaximumSize=32L*1024*1024*1024;
     public static bool TrustedUri(string provider,Uri uri)
     {
-        if(uri.Scheme!="https"||!uri.IsDefaultPort||!string.IsNullOrEmpty(uri.UserInfo))return false;
+        if(!WebsiteSafety.Https(uri))return false;
         string host=uri.IdnHost;
         return provider switch
         {
-            "Windows"=>host is "software.download.prss.microsoft.com" or "software-download.microsoft.com" or "download.microsoft.com"||host.EndsWith(".download.prss.microsoft.com",StringComparison.OrdinalIgnoreCase),
+            "Windows"=>host is "software.download.prss.microsoft.com" or "software-download.microsoft.com" or "download.microsoft.com",
             "Ubuntu"=>host=="releases.ubuntu.com",
             "Debian"=>host=="cdimage.debian.org"||host=="ftp.acc.umu.se"||host.EndsWith(".ftp.acc.umu.se",StringComparison.OrdinalIgnoreCase),
-            "Fedora"=>host=="fedoraproject.org"||host.EndsWith(".fedoraproject.org",StringComparison.OrdinalIgnoreCase),
+            "Fedora"=>host is "fedoraproject.org" or "download.fedoraproject.org" or "dl.fedoraproject.org",
             "Mint" or "MintMate" or "MintXfce"=>host is "linuxmint.com" or "www.linuxmint.com" or "pub.linuxmint.io" or "mirrors.kernel.org",
             _=>false
         };
     }
-    public static bool MicrosoftPageUri(Uri uri)=>uri.Scheme=="https"&&uri.IsDefaultPort&&string.IsNullOrEmpty(uri.UserInfo)&&(uri.Host=="microsoft.com"||uri.Host.EndsWith(".microsoft.com",StringComparison.OrdinalIgnoreCase)||uri.Host=="aka.ms");
+    public static bool MicrosoftPageUri(Uri uri)=>WebsiteSafety.MicrosoftPage(uri);
     public static IsoSource MicrosoftSource(string url,string? expectedHash)
     {
         if(!Uri.TryCreate(url,UriKind.Absolute,out var uri)||!TrustedUri("Windows",uri)||!uri.AbsolutePath.EndsWith(".iso",StringComparison.OrdinalIgnoreCase))throw new IOException("Bitte einen offiziellen Microsoft-ISO-Link verwenden. Installationsassistenten und EXE-Dateien werden hier nicht ausgeführt.");

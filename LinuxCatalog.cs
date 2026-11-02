@@ -5,7 +5,7 @@ public sealed record LinuxDistribution(string Id,string Name,string Page,bool Di
 }
 public static class LinuxCatalog
 {
-    public static readonly LinuxDistribution[] Items=[
+    public static IReadOnlyList<LinuxDistribution> Items {get;}=Array.AsReadOnly<LinuxDistribution>([
         new("Ubuntu","Ubuntu Desktop LTS","https://ubuntu.com/download/desktop",true,"Desktop LTS · Intel/AMD 64 Bit"),
         new("Debian","Debian","https://www.debian.org/distrib/",true,"Netinstall · Intel/AMD 64 Bit"),
         new("Fedora","Fedora Workstation","https://fedoraproject.org/workstation/download",true,"Workstation · Intel/AMD 64 Bit"),
@@ -33,5 +33,5 @@ public static class LinuxCatalog
         new("Nix","NixOS","https://nixos.org/download/",false,"Desktop oder minimale ISO wählen"),
         new("Alpine","Alpine Linux","https://alpinelinux.org/downloads/",false,"Standard oder Extended wählen"),
         new("Raspberry","Raspberry Pi OS","https://www.raspberrypi.com/software/operating-systems/",false,"Abbild für Raspberry Pi; andere Zielarchitektur")
-    ];
+    ]);
 }
